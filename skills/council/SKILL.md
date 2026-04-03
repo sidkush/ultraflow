@@ -19,12 +19,19 @@ One perspective produces one solution. Five perspectives produce the best soluti
 ### Step 1: Select Personas (3–5)
 Read `personas.md` (in this skill's directory). Choose based on problem domain. **Dispatch 5** for complex/architectural decisions. **Dispatch 3** for decisions with ≤2 real tradeoffs.
 
+**Generalist personas (1–10) — use for planning, architecture, implementation decisions:**
 - **Frontend/UI** → Pragmatist, User Advocate, Minimalist, Architect, Optimizer
 - **Backend/API** → Architect, Guardian, Optimizer, Researcher, Pragmatist
 - **Data/Pipeline** → Researcher, Optimizer, Guardian, Architect, Minimalist
 - **DevOps/Infra** → Guardian, Pragmatist, Optimizer, Integrator, Architect
 - **Full-stack/Complex** → Architect, Pragmatist, Guardian, User Advocate, Researcher
 - **Creative/Experimental** → Hacker, Futurist, User Advocate, Researcher, Minimalist
+
+**Specialist personas (11–20) — use for investigation, debugging, adversarial, correctness:**
+- **Bug investigation** → Forensic Pathologist, Bloodhound, Cartesian, Ghost Hunter, Binary Monk
+- **Security/adversarial** → Paranoid Security Auditor, Guardian, Pessimistic Realist, Mad Scientist, Architect of Ruin
+- **Algorithm/correctness** → Mathematical Formalist, Cartesian, Researcher, Architect, Bloodhound
+- **Distributed/systems bugs** → Architect of Ruin, Ghost Hunter, Pessimistic Realist, Forensic Pathologist, Integrator
 
 ### Step 2: Dispatch Parallel Agents
 Launch 3–5 agents simultaneously using the Agent tool. Each gets:

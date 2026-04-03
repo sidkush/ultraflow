@@ -35,10 +35,11 @@ Assumptions verified: [each + how checked]
 ```
 
 ## Phase 2: Hypothesize
-Form **exactly 2** hypotheses, each citing a quoted line from Phase 1 artifact:
-- H1: [cause] — evidence: "[quoted line]"
-- H2: [alternative cause] — evidence: "[quoted line]"
+Form **exactly 2 mechanism-level** hypotheses, each citing quoted Phase 1 evidence:
+- H1: `[X] fails BECAUSE [invariant/precondition] is violated BY [caller/condition]` — evidence: "[quoted line]"
+- H2: `[X] fails BECAUSE [invariant/precondition] is violated BY [caller/condition]` — evidence: "[quoted line]"
 
+**Symptom-level rejected**: "X returns null" ✗ → "X returns null BECAUSE caller Z skips init guard, violating X's precondition that cache is populated" ✓
 Intuition without quoted evidence = restart Phase 1.
 
 ## Ghost Check Protocol
@@ -62,8 +63,18 @@ H2: CONFIRMED/DENIED — [reason]
 Both denied → return to Phase 1 with new evidence. No 3rd hypothesis without fresh evidence.
 **Multi-causal:** If H1 CONFIRMED and fixed but symptoms persist → remaining symptoms = new bug. Carry Phase 1 artifact forward as context — do not discard history.
 
+## Pattern Exhaustion — after CONFIRMED, before Fix
+Extract the broken mechanism as an abstract pattern. Scan codebase for every location sharing it:
+```
+Pattern: [abstract broken assumption — e.g., "caller assumes cache is populated without checking"]
+Affected locations:
+  - [file:line] — [why it shares this pattern]
+  (or: "None found — verified by: [grep/search command + verbatim output]")
+```
+**Fix session must cover ALL listed locations.** Skipping any = Skeptic will REPRODUCED.
+
 ## Phase 4: Fix
-Only after root cause confirmed and Ghost β complete:
+Only after root cause confirmed, Pattern Exhaustion complete, and Ghost β complete:
 1. Write failing test (RED)
 2. **Open Fix Session** — make all related edits atomically
 3. **Close Fix Session** — run full test suite
@@ -73,10 +84,23 @@ Only after root cause confirmed and Ghost β complete:
 Session: [files changed + 1-line summary each]
 Test: [command + verbatim result]
 Regression: [suite command + result]
+Coverage matrix (bug repro variants — NOT fix details):
+  - Variant 1 (boundary): [command/input] — triggers bug if not fixed
+  - Variant 2 (null/invalid): [command/input] — triggers bug if not fixed
+  - Variant 3 (adjacent path): [command/input] — triggers bug if not fixed
 ```
 
+**Pre-Skeptic Confidence** (required — fill before dispatching):
+```
+Fix depth [1-5]:  1=symptom patched only  5=root invariant enforced at all boundaries
+Paths covered [1-5]:  1=original repro only  5=all Pattern Exhaustion locations confirmed fixed
+Session penalty: −1 per prior failed session on this bug (sessions so far: N)
+Score = depth + paths − penalty  [min 1]
+```
+Score ≤4 → write: "Causal justification: [why this fix is complete despite low score]" before dispatching.
+
 4. Dispatch `skeptic` subagent **once per session** (see `skeptic.md`).
-   Pass: Phase 1 Evidence Artifact **verbatim** + environment context. Never pass fix details.
+   Pass: Phase 1 Evidence Artifact **verbatim** + Coverage matrix + environment context. Never pass fix details.
    **Intermittent bugs:** note in dispatch — Skeptic runs repro steps 3× and reports all outcomes.
 
 **Status before Skeptic sign-off — only these phrases permitted:**

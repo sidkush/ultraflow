@@ -1,0 +1,14 @@
+{
+  "hooks": [
+    {
+      "type": "UserPromptSubmit",
+      "matcher": "startup|clear|compact",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "bash $CLAUDE_PLUGIN_DIR/hooks/session-start"
+        }
+      ]
+    }
+  ]
+}

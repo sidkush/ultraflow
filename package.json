@@ -1,0 +1,25 @@
+{
+  "name": "ultraflow",
+  "version": "1.0.0",
+  "description": "Enhanced agentic skills framework for coding agents. Progressive discovery, multi-persona councils, adversarial testing. Maximum output, minimum tokens.",
+  "type": "module",
+  "main": "skills/using-ultraflow/SKILL.md",
+  "keywords": [
+    "claude-code",
+    "skills",
+    "agentic",
+    "TDD",
+    "debugging",
+    "brainstorming",
+    "adversarial-testing",
+    "multi-agent",
+    "workflow",
+    "best-practices"
+  ],
+  "author": "UltraFlow Contributors",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ultraflow/ultraflow"
+  }
+}

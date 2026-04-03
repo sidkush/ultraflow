@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# UltraFlow session bootstrap — injects the using-ultraflow skill at session start.
+set -euo pipefail
+
+PLUGIN_DIR="${CLAUDE_PLUGIN_DIR:-$(cd "$(dirname "$0")/.." && pwd)}"
+SKILL_FILE="$PLUGIN_DIR/skills/using-ultraflow/SKILL.md"
+
+if [ ! -f "$SKILL_FILE" ]; then
+  echo '{"content":""}'
+  exit 0
+fi
+
+# Read skill content, strip frontmatter delimiters for embedding
+CONTENT=$(cat "$SKILL_FILE")
+
+# Escape for JSON
+ESCAPED=$(printf '%s' "$CONTENT" | python3 -c "import sys,json; print(json.dumps(sys.stdin.read()))" 2>/dev/null || printf '%s' "$CONTENT" | sed 's/\\/\\\\/g; s/"/\\"/g; s/\t/\\t/g' | tr '\n' ' ')
+
+cat <<ENDJSON
+{
+  "content": "<EXTREMELY_IMPORTANT>\nYou have UltraFlow installed.\n\n**Below is your bootstrap skill — read and follow it:**\n\n---\n${ESCAPED}\n</EXTREMELY_IMPORTANT>"
+}
+ENDJSON

@@ -53,12 +53,15 @@ Minimum 2 alternatives. Exception — only if 2nd is **structurally impossible**
 Zero alternatives is always a violation.
 
 ## Phase 3: Test
-Design a **causally tied** test per hypothesis — the test must directly probe the proposed mechanism, not produce a coincidental pass. Run it:
+Design a **causally tied** test per hypothesis — the test must directly probe the proposed mechanism, not produce a coincidental pass.
+
+**Write the Prediction BEFORE running the test.** CONFIRMED without a prior Prediction block = retrospective confirmation = Red Flag violation.
 ```
+Prediction: IF [mechanism from H1/H2] is correct, THEN [exact command] will produce [exact output/exit code/state change]. Anything else → DENIED.
 Test command: [exact]
 Output: [verbatim, 5-20 lines]
-H1: CONFIRMED/DENIED — [reason]
-H2: CONFIRMED/DENIED — [reason]
+H1: CONFIRMED/DENIED — [reason — CONFIRMED requires prediction to match observed output]
+H2: CONFIRMED/DENIED — [reason — CONFIRMED requires prediction to match observed output]
 ```
 Both denied → return to Phase 1 with new evidence. No 3rd hypothesis without fresh evidence.
 **Multi-causal:** If H1 CONFIRMED and fixed but symptoms persist → remaining symptoms = new bug. Carry Phase 1 artifact forward as context — do not discard history.
@@ -88,6 +91,11 @@ Coverage matrix (bug repro variants — NOT fix details):
   - Variant 1 (boundary): [command/input] — triggers bug if not fixed
   - Variant 2 (null/invalid): [command/input] — triggers bug if not fixed
   - Variant 3 (adjacent path): [command/input] — triggers bug if not fixed
+Receipts (both required — missing either = cannot dispatch Skeptic):
+  Pre-fix:  [command] → exit [N] → [failure line verbatim]   ← MUST show failure
+  Post-fix: [command] → exit [N] → [pass line verbatim]      ← MUST show pass
+Counterexample: [input/state that would reproduce original bug and is now caught by the new test]
+  Cannot produce one → write "POSITIONAL FIX — escalate before closing session"
 ```
 
 **Pre-Skeptic Confidence** (required — fill before dispatching):
@@ -123,6 +131,7 @@ Fires on **any one** of:
 
 ## Red Flags + Anti-Patterns
 - Proposing a fix before Phase 2 root cause
+- Retrospective confirmation — writing CONFIRMED without a prior Prediction block (the prediction must be written before the test runs)
 - "Let me try this..." without evidence (shotgun debugging)
 - Unrelated changes in one Fix Session (related atomic edits are correct — shotgun multi-topic is not)
 - Fixing symptoms, not causes

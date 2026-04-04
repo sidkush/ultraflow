@@ -1,56 +1,71 @@
 ---
 name: adversarial-testing
-description: Use after implementation, before declaring done. Dispatches specialized breaker agents to find bugs, security holes, regressions, and edge cases that normal testing misses.
+description: Use after implementation, before declaring done. Dispatches NEMESIS Division — 20 elite breaker operatives — to find bugs, security holes, regressions, and edge cases that normal testing misses.
 ---
 
-# Adversarial Testing
+# Adversarial Testing — NEMESIS Division
 
-## Core Principle
-If you only test the happy path, you only know the happy path works. Breaker agents actively try to destroy your code from different angles.
+> You are deploying NEMESIS Division: a bad evil organization of exceptionally skilled hackers whose sole mandate is to destroy what was built before the world does. Each operative attacks from a different angle. None of them play fair.
 
 **When**: After building passes tests. After fixing a critical bug. Before claiming "done" for any non-trivial work.
 
 ## Process
 
 ### Step 1: Select Breakers
-Read `breaker-personas.md`. Choose based on change type and scope:
+Read `breaker-personas.md`. 20 operatives are organized into 7 clusters. Select by change type and scope:
 
-**Proportional dispatch**: Minor/isolated change (≤2 files, no API surface change) → **1 breaker** (use the first Recommended Breaker from the table row matching your change type). System-wide, API, auth, or security change → **3 breakers**.
+**Dispatch scale**:
+| Change Scope | Breakers | Rule |
+|---|---|---|
+| Minor/isolated (≤2 files, no API surface) | 2 | 1 from nearest cluster + Regression Phantom |
+| System-wide or API surface change | 5 | 2 clusters (most relevant) + Regression Phantom |
+| Critical path (auth / payments / data integrity) | 7 | Security cluster (all 3) + 2 other clusters + Regression Phantom |
+| Full adversarial sweep | 10 | Top 1–2 from each cluster + Regression Phantom |
 
-| Change Type | Recommended Breakers |
-|-------------|---------------------|
-| API/Backend | Pentester, Chaos Monkey, Regression Hunter |
-| Frontend/UI | Chaos Monkey, Compatibility Checker, Regression Hunter |
-| Data/Pipeline | Chaos Monkey, Load Tester, Regression Hunter |
-| Auth/Security | Pentester, Chaos Monkey, Compatibility Checker |
-| Refactor | Regression Hunter, Compatibility Checker, Load Tester |
-| New feature | Chaos Monkey, Regression Hunter, Pentester |
+**Routing by change type**:
+| Change Type | Primary Clusters | Always Include |
+|---|---|---|
+| API / Backend | Infiltration, Mind Games | Regression Phantom |
+| Frontend / UI | Chaos Division, Temporal Warfare | Regression Phantom |
+| Auth / Security | Infiltration (all 3), Chaos Division | Regression Phantom |
+| Data / Pipeline | Resource Siege, Mind Games | Regression Phantom |
+| Payments / Transactions | Infiltration (all 3), Mind Games, Temporal Warfare | Regression Phantom |
+| Refactor | Mind Games, Temporal Warfare | Regression Phantom |
+| New Feature | Chaos Division, Systems Warfare | Regression Phantom |
+| Infra / Config | Systems Warfare (all 3), Resource Siege | Regression Phantom |
+| Real-time / Async | Temporal Warfare (all 3), Resource Siege | Regression Phantom |
+| Crypto / Keys | Alchemist, Infiltration | Regression Phantom |
 
 ### Step 2: Dispatch Breakers
-Launch 1 or 3 agents in parallel (per Step 1). Each gets:
+Launch breakers in parallel using the Agent tool. Each gets:
 
 ```
-You are [BREAKER_NAME]: [BREAKER_DESCRIPTION].
+You are [BREAKER_CODENAME] of NEMESIS Division: [BREAKER_MANTRA].
+Your attack specialty: [ATTACK_SPECIALTY]
 
 Target: [WHAT_CHANGED — files, functions, endpoints]
 Code: [RELEVANT_CODE — extracted inline, max 50 lines]
 
+Use your Signature Moves. Be creative. Go beyond them if you see a new angle.
+
 Return ONLY this block — no prose outside it:
 ## Findings
 - [SEVERITY: critical|high|medium|low] [description]
-  Reproduce: [exact input] → expected [X] → got [Y]
-  (If no finding at this severity, omit the bullet.)
+  Reproduce: [exact input/sequence] → expected [X] → got [Y]
 
 ## Tests attempted (required — min 3 before SOLID):
-- [specific test or input you tried]
-- [specific test or input you tried]
-- [specific test or input you tried]
+- [specific test or input tried]
+- [specific test or input tried]
+- [specific test or input tried]
 
+## Attack vector: [SURFACE] — [entry point used, one line]
+## Blast radius: CONTAINED | LATERAL | SYSTEMIC
+## Rebreak: NEEDED | CLEAN
 ## Verdict: BROKEN | FRAGILE | SOLID
-[MAX 120 words]
+[MAX 150 words]
 ```
 
-**Validation**: A SOLID verdict without ≥3 Tests attempted is invalid — treat as FRAGILE.
+**Validation**: SOLID without ≥3 Tests attempted = invalid — treat as FRAGILE. SOLID without Blast radius = treat as FRAGILE.
 
 ### Step 3: Triage
 Collect all findings. Triage by severity:
@@ -58,35 +73,41 @@ Collect all findings. Triage by severity:
 - **Medium** → Fix if quick (<5 min), otherwise document as known limitation.
 - **Low** → Document only. Do not fix unless trivial.
 
+Use Blast radius to scope the fix:
+- `CONTAINED` → fix the specific location
+- `LATERAL` → check adjacent code paths before fixing
+- `SYSTEMIC` → fix at the pattern level, not just the symptom
+
 ### Step 4: Fix-and-Rebreak Cycle
-For each critical/high fix:
+For each critical/high finding:
 1. Fix the issue
-2. Re-dispatch the SAME breaker — **inject `Delta: [file:lines changed — what was fixed and why]`** into the prompt so it tests the actual fix, not the original issue
-3. Confirm verdict changes to SOLID or FRAGILE
-4. If still BROKEN → the fix is incomplete. Try again (max 3 attempts).
+2. Re-dispatch the SAME breaker with `Delta: [file:lines changed — what was fixed and why]` injected into the prompt
+3. Confirm `Rebreak: CLEAN` or verdict changes to SOLID/FRAGILE
+4. If still BROKEN → fix is incomplete. Try again (max 3 attempts per operative).
 
 ### Step 5: Final Verdict
-All breakers report SOLID or FRAGILE (with documented medium issues):
+All dispatched operatives report SOLID or FRAGILE (medium issues documented):
 → Proceed to `verification`
 
-Any breaker still reports BROKEN after 3 fix attempts:
-→ Escalate to user with findings. Do not silently proceed.
+Any operative still BROKEN after 3 attempts:
+→ Escalate to user. Do not silently proceed.
 
-**Escalation report format** (required — do not escalate without this):
+**Escalation report** (required format):
 ```
-## Adversarial Escalation
-Breaker: [name]
-Finding: [description of what is broken]
+## NEMESIS Escalation
+Operative: [codename]
+Finding: [what is broken]
 Attempts: 3
-  Attempt 1: [what was tried] → still BROKEN because [reason]
-  Attempt 2: [what was tried] → still BROKEN because [reason]
-  Attempt 3: [what was tried] → still BROKEN because [reason]
+  Attempt 1: [what was tried] → still BROKEN — [reason]
+  Attempt 2: [what was tried] → still BROKEN — [reason]
+  Attempt 3: [what was tried] → still BROKEN — [reason]
 Blocked by: [root cause — why all fixes failed]
-Needs: [breaker's recommendation for unblocking]
+Needs: [operative's recommendation for unblocking]
 ```
 
 ## Anti-Patterns
 - Skipping adversarial testing for "simple" changes (simple changes break things too)
+- Dispatching only 1 breaker when routing table calls for a cluster
 - Ignoring medium findings without documenting them
-- Running all 5 breakers when 3 suffice (wastes tokens)
-- Fixing low-severity issues before shipping (perfectionism)
+- Treating FRAGILE as acceptable without written acknowledgment
+- Fabricating operative responses instead of actually dispatching agents

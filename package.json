@@ -1,7 +1,7 @@
 {
   "name": "ultraflow",
-  "version": "1.0.0",
-  "description": "Enhanced agentic skills framework for coding agents. Progressive discovery, multi-persona councils, adversarial testing. Maximum output, minimum tokens.",
+  "version": "2.0.0",
+  "description": "UltraFlow 2.0 — Agentic skills framework with 8 council-selected intelligence dimensions, UFSD cross-skill state propagation, and meta-cognitive failure mode maps. Zero hallucination, counterfactual gates, evidence triangulation, MVP-proof chains.",
   "type": "module",
   "main": "skills/using-ultraflow/SKILL.md",
   "keywords": [
@@ -10,16 +10,19 @@
     "agentic",
     "TDD",
     "debugging",
-    "brainstorming",
+    "discovery",
     "adversarial-testing",
     "multi-agent",
     "workflow",
+    "UFSD",
+    "council",
+    "zero-hallucination",
     "best-practices"
   ],
   "author": "UltraFlow Contributors",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ultraflow/ultraflow"
+    "url": "https://github.com/sidkush/ultraflow"
   }
 }

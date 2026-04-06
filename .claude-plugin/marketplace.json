@@ -5,14 +5,14 @@
     "email": ""
   },
   "metadata": {
-    "description": "Enhanced agentic skills framework. Progressive discovery helps users find their own requirements. Multi-persona councils generate diverse solutions. Adversarial testing breaks your code before users do. All in ~40% fewer tokens than alternatives."
+    "description": "UltraFlow 2.0 — 8 council-selected intelligence dimensions with cross-skill state propagation (UFSD). Zero hallucination, counterfactual gates, evidence triangulation, MVP-proof chains, invariant preservation, assumption registries, skill chain interrupts, and blind spot coverage. All in ~40% fewer tokens than alternatives."
   },
   "plugins": [
     {
       "name": "ultraflow",
       "source": "./",
-      "description": "Enhanced agentic skills: progressive discovery, multi-persona councils, adversarial testing. Maximum output, minimum tokens.",
-      "version": "1.0.0",
+      "description": "Agentic skills framework with 8 intelligence dimensions, UFSD state propagation, and meta-cognitive failure mode maps. Council-verified precision with minimum tokens.",
+      "version": "2.0.0",
       "author": {
         "name": "sidkush"
       },
@@ -20,7 +20,7 @@
       "repository": "https://github.com/sidkush/ultraflow",
       "license": "MIT",
       "category": "workflow",
-      "tags": ["skills", "TDD", "debugging", "brainstorming", "testing", "multi-agent"]
+      "tags": ["skills", "TDD", "debugging", "discovery", "adversarial-testing", "multi-agent", "UFSD", "council", "zero-hallucination"]
     }
   ]
 }

@@ -1,67 +1,72 @@
 ---
 name: building
-description: Use when plan exists and you're ready to implement. Unified skill merging TDD, execution, subagent dispatch, and inline code review. Follows test-first discipline with fresh subagent per task.
+description: Use when plan exists and you're ready to implement. TDD-enforced, UFSD-aware, with invariant preservation and skill chain interrupts.
 ---
 
 # Unified Building
 
 ## Iron Law
 **NO PRODUCTION CODE WITHOUT A FAILING TEST FIRST.**
-Code written before its test must be deleted and rewritten after the test exists.
 
-## Process
+## Step 0: UFSD Read + Failure Mode Map
+Read the UFSD summary. Extract: scope baseline, invariants, open assumptions, cascade-map.
 
-### Step 1: Load Plan + Assumption Check
-Read the plan file. Create TodoWrite entries for each task. Identify which tasks are independent (can use `parallel-dispatch`).
+**Meta-cognitive failure mode map** — before ANY code, identify 5 failure modes for THIS build session:
+1. Assumption drift — code works in isolation, fails integrated
+2. Test theater — tests pass but don't cover real behavior
+3. Scope creep — modifying files outside current task
+4. Subagent trust — accepting "DONE" without verification
+5. Invariant erosion — each task slightly breaks a contract
 
-**Assumption Detector**: Before starting ANY task, list 2-3 assumptions you're making (e.g., "file X exists", "function Y has parameter Z", "library V is installed"). Verify each against the codebase with Grep/Read/Bash. If any assumption is wrong → fix your understanding before writing code. Building on wrong assumptions compounds errors.
+Inject top 2 into every implementer/reviewer subagent prompt as "Watch for: [failure mode]".
 
-### Step 2: For Each Task — TDD Cycle
+## Step 1: Load Plan + Assumption Registry
+Read plan file. Create TodoWrite entries per task. Flag independent tasks for `parallel-dispatch`.
+Before ANY task, log 2-3 assumptions (file exists, function signature, library installed).
+Verify each with Grep/Read/Bash. Wrong assumption → fix first. Log to UFSD: `ASSUMPTION: [text] | VALIDATED: [yes/no]`.
 
+## Step 2: TDD Cycle (per task)
 **RED → GREEN → REFACTOR**:
-1. **RED**: Write a test describing expected behavior. Run it → must FAIL. If it passes without code → the test is wrong, fix it.
-2. **GREEN**: Write the simplest code that makes the test pass. Run test → must PASS. Fix code (not test) if it fails.
-3. **REFACTOR**: Remove duplication, improve names, simplify. Run test → still PASSES. Commit.
+1. **RED**: Write test for expected behavior. Run → must FAIL. Passes without code → test is wrong.
+2. **GREEN**: Simplest code to pass. Run → must PASS. Fix code (not test) if it fails.
+3. **REFACTOR**: Remove duplication, improve names. Run → still PASSES. Commit.
 
-### Step 3: Inline Code Review
-After each task's TDD cycle, dispatch a reviewer subagent (read `reviewer.md`):
+### Invariant Preservation (after GREEN)
+Re-verify every invariant from UFSD baseline. Any invariant broken → P0 stop. Diagnose and restore before proceeding.
 
+## Step 3: Inline Review
+Dispatch reviewer subagent (read `reviewer.md`): "Review this diff for: security, performance, logic errors, missing edge cases. Under 100 words."
+Fix findings before next task. **Verify independently** — run tests yourself, read diff yourself.
+
+## Step 4: Subagent Dispatch (complex tasks)
+Dispatch implementer (read `implementer.md`) with: task description, extracted file contents, test requirements.
+Statuses: `DONE` (verify) | `DONE_WITH_CONCERNS` (review) | `NEEDS_CONTEXT` (provide + re-dispatch once) | `BLOCKED` (must include `Needs:` + `Tried:`).
+
+## Step 5: Task Completion + UFSD Write
+Mark TodoWrite complete immediately. After ALL tasks: run full test suite.
+Update UFSD summary: `confidence=[1-5] | scope=[completed|deviated] | invariants=[pass/fail list]`.
+
+## Skill Chain Interrupt
+| Condition | Level | Action |
+|-----------|-------|--------|
+| Task 3x over estimate / tests fail after 2 fix attempts | LOCAL | `git stash`, diagnose, retry |
+| Plan gap or spec conflict discovered | UPSTREAM | Return to `planning`, update UFSD |
+| Cascading errors or invariant chain broken | HALT | Invoke `debugging`, write `[RESTART REQUESTED]` to UFSD — requires user approval |
+
+Never compound errors. Never auto-RESTART — user must approve.
+
+## Structured Output (per task)
 ```
-Review this diff for: security issues, performance problems,
-logic errors, missing edge cases. Be specific. Under 100 words.
+Task: [name] | Files: [list] | Tests: [command] → [result]
+Invariants: [checked — pass/fail] | Root cause: [yes/no]
 ```
-
-If reviewer finds issues → fix in current task before moving to next.
-
-**Subagent Verification Rule**: After ANY subagent dispatch (implementer or reviewer), you MUST independently verify their claims. Run the tests yourself. Read the diff yourself. A subagent saying "DONE" is not evidence — only test output you personally observed is evidence.
-
-### Step 4: Task Completion
-- Mark TodoWrite task as completed
-- Move to next task
-- After ALL tasks: run full test suite to catch integration issues
-
-## Subagent Dispatch for Tasks
-For complex tasks, dispatch an implementer subagent (read `implementer.md`):
-- Provide: task description, relevant file contents (extracted — don't make them read files), test requirements
-- Expect: implementation + tests + status (DONE | DONE_WITH_CONCERNS | NEEDS_CONTEXT | BLOCKED)
-- If NEEDS_CONTEXT: provide the specific missing context and re-dispatch once.
-- If BLOCKED: subagent output must include `Needs: [exact file/function/info missing]` + `Tried: [what was attempted]`. Never retry without addressing the specific blocker.
-
-## Stopping Points + Checkpoint Rollback
-STOP and assess if:
-- A task takes 3x longer than estimated
-- Tests fail in unexpected ways after 2 fix attempts → **Checkpoint Rollback**: prefer `git stash` (safe — preserves and recovers changes). Use `git checkout .` only if you have no new untracked files — it permanently deletes them with no recovery. Never compound errors by building on broken code.
-- You discover the plan has a gap → return to `planning`
-- Build/lint errors cascade → invoke `debugging`
 
 ## Transition
-All tasks done + full test suite passes → invoke `adversarial-testing`, then `verification`.
+All tasks done + full suite passes → invoke `adversarial-testing`, then `verification`.
 
 ## Anti-Patterns
-- "I'll add tests after" → NO. Test first or delete the code.
-- "Already manually tested" → Not evidence. Write the test.
-- "This is too simple to test" → Simple code still needs a test.
-- Skipping review on "obvious" changes → Review everything.
-- Batching task completions → Mark complete immediately.
-- Modifying files outside current task scope → Scope creep. Revert.
-
+- "I'll add tests after" → Test first or delete.
+- "Already manually tested" → Not evidence.
+- Skipping review → Review everything.
+- Batching completions → Mark complete immediately.
+- Files outside task scope → Revert.

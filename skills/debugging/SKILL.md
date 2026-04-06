@@ -8,6 +8,25 @@ description: Use when encountering any bug, test failure, or unexpected behavior
 ## Iron Law
 **NO FIXES WITHOUT ROOT CAUSE INVESTIGATION FIRST.**
 
+## Session Start — UFSD Read Protocol
+Before anything else:
+1. Check for UFSD summary layer at `docs/ultraflow/specs/[context].ufsd.md`. If found, extract: prior assumptions, invariants, cascade-map — use to scope Phase 1.
+2. If no UFSD exists, note: "No UFSD found — starting fresh."
+3. UFSD-sourced invariants go directly into Phase 1 Assumptions list (pre-verified unless contradicted by current evidence).
+
+## Meta-Cognitive Failure Mode Map
+**Generate at session start — BEFORE Phase 1.** Produce exactly 5 failure modes specific to THIS debugging session context:
+
+| # | failure mode | Session-Specific Risk |
+|---|---|---|
+| 1 | Treating symptom as root cause | [why this session is at risk] |
+| 2 | Confirmation bias on first hypothesis | [which prior assumption could bias] |
+| 3 | Missing cascade paths | [which system areas could propagate] |
+| 4 | Unverified ASSUMPTION carried forward | [which assumptions are untested here] |
+| 5 | Knowledge boundary gap | [where uncertainty is highest] |
+
+**Inject top 2 failure modes into Skeptic dispatch prompt verbatim** under heading "Watch for these failure modes."
+
 ## Entry — Choose Path First
 
 | Signal | Path |
@@ -22,7 +41,9 @@ description: Use when encountering any bug, test failure, or unexpected behavior
 ## Phase 1: Observe
 1. Reproduce: run exact failing command, copy full output
 2. Read: what does the error actually say — not what you assume
-3. Assumptions: list each and verify against codebase
+3. Assumptions: list each, verify against codebase, and log to UFSD detail layer:
+   `ASSUMPTION: [text] | VALIDATED: [yes/no] | SOURCE: [file:line or "inferred"]`
+   Unvalidated assumptions at end of session = risk items — list explicitly in UFSD Write.
 4. Isolate: smallest input that triggers the failure
 5. Timeline: `git log --oneline -10`
 
@@ -32,6 +53,7 @@ Command: [exact command]
 Output: [verbatim, 5-20 lines]
   OR (silent failure): Behavioral diff: [expected] vs [actual] — observable difference: [measurable]
 Assumptions verified: [each + how checked]
+UFSD sourced: [yes — invariants used: X | no]
 ```
 
 ## Phase 2: Hypothesize
@@ -41,6 +63,18 @@ Form **exactly 2 mechanism-level** hypotheses, each citing quoted Phase 1 eviden
 
 **Symptom-level rejected**: "X returns null" ✗ → "X returns null BECAUSE caller Z skips init guard, violating X's precondition that cache is populated" ✓
 Intuition without quoted evidence = restart Phase 1.
+
+**Label each hypothesis:** `ROOT_CAUSE` or `SYMPTOM`. Symptom-level hypotheses are auto-rejected — do not advance to Phase 3.
+
+**Counterfactual Gate — required before accepting any hypothesis:**
+For each hypothesis, state its strongest counterargument with evidence before acceptance:
+```
+H1 Counterfactual: "The strongest evidence AGAINST H1 is [X — cite specific line/measurement/behavior]."
+H1 Accepted because: "[Y defeats X — must cite code, test, or measurement (MVP-Proof)]."
+H2 Counterfactual: "The strongest evidence AGAINST H2 is [X — cite specific line/measurement/behavior]."
+H2 Accepted because: "[Y defeats X — must cite code, test, or measurement (MVP-Proof)]."
+```
+If Y cannot pass MVP-Proof (no code, test, or measurement citation) → hypothesis unacceptable → return to Phase 1 with new evidence.
 
 ## Ghost Check Protocol
 Run **before Phase 3** (label `Ghost α`) AND **before Phase 4** (label `Ghost β`). Cannot advance without this block.
@@ -108,7 +142,7 @@ Score = depth + paths − penalty  [min 1]
 Score ≤4 → write: "Causal justification: [why this fix is complete despite low score]" before dispatching.
 
 4. Dispatch `skeptic` subagent **once per session** (see `skeptic.md`).
-   Pass: Phase 1 Evidence Artifact **verbatim** + Coverage matrix + environment context. Never pass fix details.
+   Pass: Phase 1 Evidence Artifact **verbatim** + Coverage matrix + environment context + top 2 failure modes from Meta-Cognitive Failure Mode Map. Never pass fix details.
    **Intermittent bugs:** note in dispatch — Skeptic runs repro steps 3× and reports all outcomes.
 
 **Status before Skeptic sign-off — only these phrases permitted:**
@@ -118,6 +152,23 @@ Score ≤4 → write: "Causal justification: [why this fix is complete despite l
 
 If Skeptic → `BUG NOT DETERMINABLE`: improve Phase 1 artifact and re-dispatch once.
 If `BUG NOT DETERMINABLE` twice consecutive → STOP, escalate to user.
+
+## UFSD Write Protocol
+At end of Phase 4, after Skeptic sign-off, write to `docs/ultraflow/specs/[context].ufsd.md`:
+
+**Summary layer** (append one line):
+`approach=[fix-type] | confidence=[pre-skeptic score] | session=[date] | outcome=[RESOLVED/ESCALATED]`
+
+**Detail layer** (append block):
+```
+## Debug Session [date]
+Decisions: [key Phase 2 hypothesis choices and why]
+Fix summary: [what changed and why it addresses root cause]
+Assumption outcomes:
+  - ASSUMPTION: [text] | VALIDATED: [yes/no] | IMPACT: [affected fix direction / no impact]
+Unvalidated assumptions (risk items): [list or "none"]
+Cascade paths verified: [locations from Pattern Exhaustion + verification method]
+```
 
 ## Loop Detector
 Fires on **any one** of:
@@ -132,8 +183,12 @@ Fires on **any one** of:
 ## Red Flags + Anti-Patterns
 - Proposing a fix before Phase 2 root cause
 - Retrospective confirmation — writing CONFIRMED without a prior Prediction block (the prediction must be written before the test runs)
+- Accepting a hypothesis without completing the Counterfactual Gate
+- Labeling a SYMPTOM-level hypothesis as ROOT_CAUSE
 - "Let me try this..." without evidence (shotgun debugging)
 - Unrelated changes in one Fix Session (related atomic edits are correct — shotgun multi-topic is not)
 - Fixing symptoms, not causes
 - Any status language not in the allowlist above
 - try/catch to hide errors | commenting out failing tests | "works on my machine" without investigation
+- Skipping UFSD Read at session start when a UFSD file exists
+- Leaving unvalidated ASSUMPTIONs without logging them as risk items in UFSD Write

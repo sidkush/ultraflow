@@ -1,32 +1,30 @@
 ---
 name: adversarial-testing
-description: Use after implementation, before declaring done. Dispatches ALL 20 NEMESIS Division operatives in parallel to find bugs, security holes, regressions, and edge cases that normal testing misses. Zero routing shortcuts, zero operative sampling. The full division is the product.
+description: Dispatches ALL 20 NEMESIS operatives in parallel to find bugs, security holes, regressions, and edge cases. Zero sampling. Full division every run.
 ---
 
 # Adversarial Testing — NEMESIS Division
 
-> You are deploying NEMESIS Division: a bad evil organization of exceptionally skilled hackers whose sole mandate is to destroy what was built before the world does. Each operative attacks from a different angle. None of them play fair.
+> 20 operatives. Every run. Full strength or not at all.
 
-## Core Principle
-Twenty operatives. Every run. Always. No sampling, no "only 5 for simple changes." NEMESIS operates at full strength or not at all. The collective destruction of all 20 attack surfaces — that is the division.
+## Meta-Cognitive Failure Mode Map (check before Step 1)
+1. **Scope drift** — operatives attack adjacent systems. Fix: lock attack surface in Step 1.
+2. **Hallucinated findings** — fabricated reproduce steps. Fix: anti-hallucination gate (Step 2).
+3. **UFSD blind spot** — council-flagged risks not used as attack vectors. Fix: UFSD Read (Step 1).
+4. **Confirmation bias** — operatives validate instead of break. Fix: enforce BROKEN|FRAGILE|SOLID only.
+5. **Coverage illusion** — INVALID findings counted as coverage. Fix: Coverage Score disclosure (Step 3).
 
-**When**: After building passes tests. After fixing a critical bug. Before claiming "done" for any non-trivial work.
+Top 2 failure modes per operative are in `breaker-personas.md`.
 
-## Process
-
-### Step 1: Extract Target
-Before dispatch, distill the target:
+## Step 1: Extract Target + UFSD Read
 ```
-Target: [≤100 words — what was built/changed]
-Attack surface: [entry points, data flows, auth boundaries, external integrations]
-Change scope: [files modified, APIs touched, data schemas altered]
-Known weak points: [any areas already suspected of fragility]
+Target: [≤100 words]; Attack surface: [entry points, data flows, auth, integrations]
+Change scope: [files, APIs, schemas]; Known weak points: [suspected fragility]
 ```
+**UFSD Read**: Extract all `risk:` items from any council UFSD block in `docs/ultraflow/specs/` → add as mandatory attack vectors.
 
-### Step 2: Dispatch All 20 Operatives Simultaneously
-Launch **all 20 NEMESIS operatives** using the Agent tool — in a single parallel dispatch. All 20 must return before triage begins.
-
-Read `breaker-personas.md` for full operative profiles. The 20 operatives (dispatch in this order, all at once):
+## Step 2: Dispatch All 20 Operatives Simultaneously
+Read `breaker-personas.md` for full profiles. Dispatch all via Agent tool in one parallel call. All 20 must return before triage.
 
 **Cluster I — Infiltration**: 1 Phantom Injector, 2 Ghost in the Auth, 3 Baron Von CSRF
 **Cluster II — Chaos Division**: 4 Professor Overflow, 5 Sigil Wraith, 6 Architect Void
@@ -36,133 +34,81 @@ Read `breaker-personas.md` for full operative profiles. The 20 operatives (dispa
 **Cluster VI — Mind Games**: 16 Paradox, 17 Ouroboros, 18 Meridian
 **Cluster VII — Deep Specialists**: 19 The Alchemist, 20 Regression Phantom
 
-Each operative prompt:
+Operative prompt template:
 ```
-You are [OPERATIVE_CODENAME] of NEMESIS Division: [OPERATIVE_MANTRA].
-Your attack specialty: [ATTACK_SPECIALTY from breaker-personas.md]
-Your signature moves: [4 SIGNATURE_MOVES from breaker-personas.md]
-
-Target: [TARGET from Step 1]
-Attack surface: [ATTACK_SURFACE from Step 1]
-Code under attack: [RELEVANT_CODE — max 60 lines, inline]
-
-Use your Signature Moves. Be creative. Go beyond them if you see a new angle. Your job is to break this — not validate it.
-
-Return ONLY this block — no prose outside it:
+You are [CODENAME]: [MANTRA]. Specialty: [ATTACK_SPECIALTY]. Moves: [4 SIGNATURE_MOVES].
+Target: [TARGET] | Surface: [ATTACK_SURFACE] | Code: [RELEVANT_CODE ≤60 lines]
+Break this. Return ONLY:
 ## Findings
-- [SEVERITY: critical|high|medium|low] [exact description — what breaks, not what might break]
-  Reproduce: [exact input/sequence/state] → expected [X] → got [Y]
-  (No exact reproduce step = finding is INVALID)
-
-## Tests attempted (min 5 before SOLID):
-- [specific input/state tried and exact observed result]
-- [specific input/state tried and exact observed result]
-- [specific input/state tried and exact observed result]
-- [specific input/state tried and exact observed result]
-- [specific input/state tried and exact observed result]
-
-## Attack vector: [SURFACE] — [exact entry point used, one line]
+- [SEVERITY: critical|high|medium|low] [exact description]
+  Reproduce: [exact input/state] → expected [X] → got [Y]
+## Tests attempted (min 5): - [specific input → exact result] ×5
+## Attack vector: [SURFACE] — [exact entry point]
 ## Blast radius: CONTAINED | LATERAL | SYSTEMIC
 ## Rebreak: NEEDED | CLEAN
-## Verdict: BROKEN | FRAGILE | SOLID
-[MAX 200 words]
+## Verdict: BROKEN | FRAGILE | SOLID  [MAX 200 words]
 ```
 
-**Anti-hallucination validation gate** (hard — blocks if violated):
-- Findings missing exact Reproduce step → **INVALID finding** — discard that finding only, keep others
-- Tests attempted < 5 → SOLID verdict overridden to **FRAGILE** automatically
-- Tests attempted that are generic ("tested with bad input", "tried edge cases") → **INVALID test** — does not count toward the 5 minimum
-- SOLID without Blast radius → treated as **FRAGILE**
-- SOLID without Attack vector → treated as **FRAGILE**
-- Operative returns narrative prose instead of block format → **FABRICATED** — treat as not dispatched, re-dispatch once
-- Critical finding with no severity label → labeled **high** automatically
+**Anti-hallucination gate** (hard):
+- No exact Reproduce → **INVALID** finding (discard, keep others)
+- Tests < 5 → SOLID → **FRAGILE**; generic tests ("tried edge cases") → **INVALID**, don't count
+- Missing Blast radius or Attack vector on SOLID → **FRAGILE**
+- Narrative prose instead of block → **FABRICATED** — re-dispatch once
+- Critical finding, no label → auto **high**
 
-**Partial failure**: If any operatives fail/error → re-dispatch those slots once. If re-dispatch also fails → proceed without them, note count. If fewer than 12 valid operative reports remain → HALT, tell user how many succeeded, ask whether to proceed or re-run.
+**Partial failure**: Re-dispatch failed slots once. < 12 valid reports → HALT, tell user count, ask to proceed.
 
-### Step 3: Mega-Triage — Priority Matrix
+**Evidence Triangulation**: VALID = ≥2 operatives independently agree OR 1 operative with 2 distinct proof paths. Single-operative, single-path = **PROVISIONAL**. Mark in triage; do not discard.
 
-After all 20 operatives return, do NOT present 20 individual reports. Instead:
+## Step 3: Mega-Triage
 
-**3a. Severity × Blast Radius Priority Matrix**:
+**Severity × Blast Radius → Priority**:
 ```
-              CONTAINED   LATERAL   SYSTEMIC
-critical  →     P1          P0        P0
-high      →     P2          P1        P1
-medium    →     P3          P2        P2
-low       →     P4          P3        P3
+              CONTAINED  LATERAL  SYSTEMIC
+critical  →     P1         P0       P0
+high      →     P2         P1       P1
+medium    →     P3         P2       P2
+low       →     P4         P3       P3
 ```
-P0 = Stop everything. Fix before any other work.
-P1 = Fix before proceeding. Rebreak required.
-P2 = Fix if <10 min, otherwise document as known limitation.
-P3 = Document only.
-P4 = Note for backlog.
+P0=stop everything · P1=fix before proceeding · P2=fix if <10 min else document · P3=document · P4=backlog
 
-**3b. Triage Table**:
-```markdown
-| Priority | Operative | Severity | Blast Radius | Finding (1 line) | Reproduce |
-|----------|-----------|----------|--------------|-----------------|-----------|
-| P0       | [name]    | critical | SYSTEMIC     | [description]   | [input→output] |
-| P1       | [name]    | high     | LATERAL      | [description]   | [input→output] |
-...
-```
-Sort by priority (P0 first). Include all BROKEN and FRAGILE findings.
+**Triage Table** — sort P0 first, include all BROKEN/FRAGILE, mark PROVISIONAL:
+`| Priority | Operative | Severity | Blast Radius | Finding | Reproduce | Evidence |`
 
-**3c. Unanimous Weaknesses** (≥15/20 operatives flag the same class of vulnerability):
-→ List each. These are structural — any approach chosen must address them before closing.
+- **Unanimous Weaknesses** (≥15/20 same class) → structural; must address before closing.
+- **Strong Attack Signals** (≥10/20 same surface) → mark WARNING. Two+ surfaces → escalate to user before fixing.
+- **Minority Discoveries** (<3 operatives, critical/high) → list with name; never discard.
+- **Clean Operatives** → list SOLID reporters (confirmed-safe surfaces).
 
-**3d. Strong Attack Signals** (≥10/20 operatives independently discover the same attack surface):
-→ Mark with ⚠️. If 2+ attack surfaces each have ≥10 votes, escalate to user before fixing — indicates architectural issue, not bug.
+**Coverage Score**: `Attack surface: [N clusters SOLID] / 7.` Disclosure only — user decides if sufficient.
 
-**3e. Minority Discoveries** (found by <3 operatives but with critical or high severity):
-→ List with operative name. Do not discard — rare discoveries are often the most exploitable.
+## Step 4: Fix-and-Rebreak Cycle
 
-**3f. Clean Operatives**: List operatives who returned SOLID. These are the confirmed-safe attack surfaces.
+Rebreak scope: `CONTAINED` → operative only · `LATERAL` → full cluster · `SYSTEMIC` → all 20.
 
-### Step 4: Fix-and-Rebreak Cycle
+P0/P1: Fix → re-dispatch with `Delta: [file:lines — what changed]` → confirm CLEAN. Still BROKEN → retry (max 3 attempts).
+P2: Fix → single operative rebreak → CLEAN or document as known limitation.
 
-**Rebreak scope is determined by Blast Radius**:
-- `CONTAINED` → re-dispatch only the operative who found the issue
-- `LATERAL` → re-dispatch the full cluster the operative belongs to
-- `SYSTEMIC` → re-dispatch ALL 20 operatives (full division sweep)
+**Skill Chain Interrupt**: SYSTEMIC BROKEN after 3 attempts → write `[RESTART REQUESTED]` to UFSD + ask user before any further action. Two+ Strong Attack Signal surfaces → architectural failure → `[RESTART REQUESTED]` to UFSD + escalate to `ultraflow:council`.
 
-For each P0/P1 finding:
-1. Fix the issue
-2. Re-dispatch per scope above with `Delta: [file:lines changed — what was fixed and why]` injected into each prompt
-3. Confirm `Rebreak: CLEAN` or verdict changes to SOLID/FRAGILE
-4. If still BROKEN → fix is incomplete. Try again (max 3 attempts per operative).
+## Step 5: Final Verdict + UFSD Write
 
-For P2 findings: Fix → single operative rebreak → confirm CLEAN or document as known limitation.
-
-### Step 5: Final Verdict
-
-All dispatched operatives report SOLID or FRAGILE (P2/P3/P4 issues documented):
-→ Proceed to `verification`
-
-Any operative still BROKEN after 3 attempts:
-→ Escalate to user. Do not silently proceed.
-
-**Escalation report** (required format):
+All operatives SOLID/FRAGILE (P2+ documented) → proceed to `verification`.
+Any still BROKEN after 3 attempts → escalate:
 ```
 ## NEMESIS Escalation
-Operative: [codename]  Cluster: [cluster name]
-Finding: [what is broken]
-Priority: [P0/P1]  Blast radius: [CONTAINED|LATERAL|SYSTEMIC]
-Attempts: 3
-  Attempt 1: [what was tried] → still BROKEN — [reason]
-  Attempt 2: [what was tried] → still BROKEN — [reason]
-  Attempt 3: [what was tried] → still BROKEN — [reason]
-Blocked by: [root cause — why all fixes failed]
-Needs: [operative's recommendation for unblocking]
+Operative: [codename] Cluster: [name] Priority: [P0/P1] Blast: [radius]
+Finding: [broken] Blocked by: [root cause] Needs: [recommendation]
+Attempts: 1=[tried→result] 2=[tried→result] 3=[tried→result]
 ```
 
-**SYSTEMIC finding still BROKEN after 3 attempts**: Do not proceed under any circumstances. This is an architectural failure — escalate to `ultraflow:council` with the finding as the problem statement.
+**UFSD Write** (append to active spec in `docs/ultraflow/specs/`):
+```
+## UFSD adversarial-testing [date]
+Verdict: [PASS|ESCALATED|RESTART REQUESTED] | Coverage: [N/7 clusters SOLID]
+Contradictions: [PROVISIONAL findings that conflicted across operatives]
+Detail: [P0/P1 findings with reproduce steps]
+```
 
 ## Anti-Patterns
-- Dispatching fewer than 20 operatives because the change "seems simple"
-- Fabricating operative responses instead of actually dispatching agents
-- Treating FRAGILE as acceptable without written acknowledgment in triage table
-- Skipping SYSTEMIC rebreak (full division sweep) — SYSTEMIC means the whole system is affected
-- Accepting "tested with bad input" as a valid test (must be specific: exact value, exact sequence)
-- Letting P0 findings sit while fixing P2/P3 findings first
-- Proceeding to verification with any operative still BROKEN
-- Counting INVALID findings toward the fix count (each INVALID = zero coverage)
+- Fewer than 20 dispatched · Fabricating responses · Skipping SYSTEMIC rebreak · INVALID findings counted as coverage · P0 deferred while P2/P3 fixed · PROVISIONAL discarded · Proceeding to verification with any operative BROKEN

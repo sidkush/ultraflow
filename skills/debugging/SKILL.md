@@ -1,15 +1,32 @@
 ---
 name: debugging
-description: Use when encountering any bug, test failure, or unexpected behavior. Systematic 4-phase approach with evidence gates, blind skeptic verification, and loop detection.
+description: Use when encountering any bug, test failure, or unexpected behavior. Systematic 4-phase approach with session scoping, TDD bug fix loop, proof-of-fix gates, blind skeptic verification, and mandatory debug journals.
 ---
 
 # Systematic Debugging
 
-## Iron Law
-**NO FIXES WITHOUT ROOT CAUSE INVESTIGATION FIRST.**
+## Iron Laws
+1. **NO FIXES WITHOUT ROOT CAUSE INVESTIGATION FIRST.**
+2. **ONE BUG AT A TIME. NEVER BATCH.**
+3. **NO "SHOULD FIX IT" — PROVE IT FIXED.**
 
-## Session Start — UFSD Read Protocol
-Before anything else:
+## Session Scope Protocol — BEFORE ANYTHING ELSE
+
+**Hard limit: 3 bugs per session.** If more than 3 bugs exist, triage to pick the 3 highest-impact. Remaining go to a follow-up session.
+
+```
+Session scope:
+  Bug 1: [description] — Status: [QUEUED | ACTIVE | RESOLVED | ESCALATED]
+  Bug 2: [description] — Status: QUEUED
+  Bug 3: [description] — Status: QUEUED
+```
+
+**Sequential Completion Rule:** Bug N+1 cannot start until Bug N reaches RESOLVED or ESCALATED. No interleaving. No "quick detour." If fixing Bug 1 reveals Bug 4, log it but do NOT context-switch — finish Bug 1 first, then re-triage the queue.
+
+**Why:** Sessions with 13+ bug fixes consistently degrade — early fixes succeed, later fixes get buggy as context fills. Shorter focused sessions maintain fix quality throughout.
+
+## UFSD Read Protocol
+Before Phase 1:
 1. Check for UFSD summary layer at `docs/ultraflow/specs/[context].ufsd.md`. If found, extract: prior assumptions, invariants, cascade-map — use to scope Phase 1.
 2. If no UFSD exists, note: "No UFSD found — starting fresh."
 3. UFSD-sourced invariants go directly into Phase 1 Assumptions list (pre-verified unless contradicted by current evidence).
@@ -22,8 +39,8 @@ Before anything else:
 | 1 | Treating symptom as root cause | [why this session is at risk] |
 | 2 | Confirmation bias on first hypothesis | [which prior assumption could bias] |
 | 3 | Missing cascade paths | [which system areas could propagate] |
-| 4 | Unverified ASSUMPTION carried forward | [which assumptions are untested here] |
-| 5 | Knowledge boundary gap | [where uncertainty is highest] |
+| 4 | Claiming fix without proof | [which fix could be falsely reported as done] |
+| 5 | Context degradation from batching | [which bugs could suffer from late-session fatigue] |
 
 **Inject top 2 failure modes into Skeptic dispatch prompt verbatim** under heading "Watch for these failure modes."
 
@@ -37,6 +54,8 @@ Before anything else:
 **Auto-reclassify to Complex if:** fix requires >1 file / fails unexpectedly / error recurs after fix.
 **On reclassify (Simple→Complex):** carry Phase 1 artifact verbatim into the new Complex-path Phase 1. Do not restart — existing evidence is still valid.
 **Resume (prior attempts exist):** audit prior fix attempts into Phase 1 Evidence Artifact before starting — treat each as a "DENIED" hypothesis with evidence. Do not re-cover already-disproven ground.
+
+---
 
 ## Phase 1: Observe
 1. Reproduce: run exact failing command, copy full output
@@ -110,29 +129,77 @@ Affected locations:
 ```
 **Fix session must cover ALL listed locations.** Skipping any = Skeptic will REPRODUCED.
 
-## Phase 4: Fix
-Only after root cause confirmed, Pattern Exhaustion complete, and Ghost β complete:
-1. Write failing test (RED)
-2. **Open Fix Session** — make all related edits atomically
-3. **Close Fix Session** — run full test suite
+---
 
-**Evidence Artifact** — required before Skeptic dispatch:
+## Phase 4: TDD Bug Fix Loop
+
+Only after root cause confirmed, Pattern Exhaustion complete, and Ghost β complete.
+
+**This is the most critical phase. Follow each step exactly. No shortcuts.**
+
+### Step 1: Write Failing Test (RED)
+Write a test that **reproduces the exact bug**. This test encodes what "fixed" means.
 ```
-Session: [files changed + 1-line summary each]
-Test: [command + verbatim result]
-Regression: [suite command + result]
-Coverage matrix (bug repro variants — NOT fix details):
-  - Variant 1 (boundary): [command/input] — triggers bug if not fixed
-  - Variant 2 (null/invalid): [command/input] — triggers bug if not fixed
-  - Variant 3 (adjacent path): [command/input] — triggers bug if not fixed
-Receipts (both required — missing either = cannot dispatch Skeptic):
-  Pre-fix:  [command] → exit [N] → [failure line verbatim]   ← MUST show failure
-  Post-fix: [command] → exit [N] → [pass line verbatim]      ← MUST show pass
-Counterexample: [input/state that would reproduce original bug and is now caught by the new test]
-  Cannot produce one → write "POSITIONAL FIX — escalate before closing session"
+Test file: [path]
+Test name: [descriptive name that includes the bug behavior]
 ```
 
-**Pre-Skeptic Confidence** (required — fill before dispatching):
+### Step 2: Confirm Failure
+Run the test. It **MUST fail**. If it passes without any code change, your test is wrong — it doesn't actually reproduce the bug. Rewrite it.
+```
+RED confirmation:
+  Command: [exact test command]
+  Output: [verbatim failure output]
+  Exit code: [non-zero]
+```
+**Cannot proceed to Step 3 without RED confirmation.**
+
+### Step 3: Implement Minimal Fix
+Write the **smallest possible change** that addresses the root cause. Do not refactor. Do not improve adjacent code. Do not add features. Fix the bug and nothing else.
+
+### Step 4: Confirm Pass (GREEN)
+Run the same test from Step 1. It **MUST pass**.
+```
+GREEN confirmation:
+  Command: [same test command as Step 2]
+  Output: [verbatim pass output]
+  Exit code: 0
+```
+**If it still fails:** analyze why, adjust the fix (not the test), and re-run. Iterate Steps 3-4 until green. Do NOT move on while the test is red.
+
+### Step 5: Regression Check
+Run the **full test suite**. Every pre-existing test must still pass.
+```
+Regression check:
+  Command: [full suite command]
+  Output: [summary line — e.g., "119 passed, 0 failed"]
+  Exit code: 0
+```
+**If any regression:** fix it before proceeding. The regression fix follows the same TDD loop (write test for regression → confirm red → fix → confirm green). Do NOT skip this.
+
+### Step 6: Proof-of-Fix Gate
+
+**BANNED PHRASES** — using any of these means you have NOT verified:
+- "This should fix it"
+- "This should work now"
+- "I believe this resolves..."
+- "The fix looks correct"
+- Any variant of "should", "probably", "likely", "I think"
+
+**Required proof artifact:**
+```
+Proof-of-Fix:
+  Pre-fix behavior:  [command] → [failure output verbatim]
+  Post-fix behavior: [command] → [success output verbatim]
+  Test proof:        [test command] → [pass output verbatim]
+  Suite proof:       [suite command] → [N passed, 0 failed]
+  Counterexample:    [input that would have triggered the original bug, now caught by the new test]
+```
+All 5 fields required. Missing any = cannot proceed to Skeptic.
+
+**Cannot produce counterexample →** write `"POSITIONAL FIX — escalate before closing"`.
+
+### Step 7: Pre-Skeptic Confidence
 ```
 Fix depth [1-5]:  1=symptom patched only  5=root invariant enforced at all boundaries
 Paths covered [1-5]:  1=original repro only  5=all Pattern Exhaustion locations confirmed fixed
@@ -141,9 +208,10 @@ Score = depth + paths − penalty  [min 1]
 ```
 Score ≤4 → write: "Causal justification: [why this fix is complete despite low score]" before dispatching.
 
-4. Dispatch `skeptic` subagent **once per session** (see `skeptic.md`).
-   Pass: Phase 1 Evidence Artifact **verbatim** + Coverage matrix + environment context + top 2 failure modes from Meta-Cognitive Failure Mode Map. Never pass fix details.
-   **Intermittent bugs:** note in dispatch — Skeptic runs repro steps 3× and reports all outcomes.
+### Step 8: Skeptic Dispatch
+Dispatch `skeptic` subagent **once per session** (see `skeptic.md`).
+Pass: Phase 1 Evidence Artifact **verbatim** + Proof-of-Fix artifact + Coverage matrix + environment context + top 2 failure modes from Meta-Cognitive Failure Mode Map. Never pass fix implementation details.
+**Intermittent bugs:** note in dispatch — Skeptic runs repro steps 3x and reports all outcomes.
 
 **Status before Skeptic sign-off — only these phrases permitted:**
 - `"Awaiting Skeptic sign-off"`
@@ -152,6 +220,27 @@ Score ≤4 → write: "Causal justification: [why this fix is complete despite l
 
 If Skeptic → `BUG NOT DETERMINABLE`: improve Phase 1 artifact and re-dispatch once.
 If `BUG NOT DETERMINABLE` twice consecutive → STOP, escalate to user.
+
+---
+
+## Phase 5: Debug Journal
+
+**After Skeptic sign-off (RESOLVED) or escalation (ESCALATED), write a debug journal.**
+
+Save to: `docs/ultraflow/debug-journals/[YYYY-MM-DD]-[slug].md`
+Use template from `debugging/debug-journal-template.md`.
+
+The journal captures the **full story** of the bug — not just what changed, but why it existed, how it got there, and how to prevent it. These journals are consumed by `/graphify` and future `/init` sessions to build institutional memory.
+
+**Journal is mandatory.** No bug is RESOLVED without its journal committed alongside the fix.
+
+### What makes a good journal:
+- **Root cause chain** — trace back to the original decision or commit that introduced the bug
+- **"How did we miss it"** — what test/review/process gap allowed this bug to ship
+- **Prevention rule** — a concrete, actionable rule (not "be more careful")
+- **Pattern tag** — categorize the bug type so future sessions can search for similar patterns
+
+---
 
 ## UFSD Write Protocol
 At end of Phase 4, after Skeptic sign-off, write to `docs/ultraflow/specs/[context].ufsd.md`:
@@ -168,6 +257,21 @@ Assumption outcomes:
   - ASSUMPTION: [text] | VALIDATED: [yes/no] | IMPACT: [affected fix direction / no impact]
 Unvalidated assumptions (risk items): [list or "none"]
 Cascade paths verified: [locations from Pattern Exhaustion + verification method]
+Journal: [link to debug-journals/[file].md]
+```
+
+## Session Completion
+After all bugs in the session scope are RESOLVED or ESCALATED:
+1. Verify session scope — all bugs accounted for
+2. All debug journals committed
+3. UFSD updated
+4. Print session summary:
+```
+Session complete:
+  Bug 1: [description] — RESOLVED (journal: [link])
+  Bug 2: [description] — RESOLVED (journal: [link])
+  Bug 3: [description] — ESCALATED (reason: [X])
+  Bugs deferred to next session: [list or "none"]
 ```
 
 ## Loop Detector
@@ -182,13 +286,18 @@ Fires on **any one** of:
 
 ## Red Flags + Anti-Patterns
 - Proposing a fix before Phase 2 root cause
-- Retrospective confirmation — writing CONFIRMED without a prior Prediction block (the prediction must be written before the test runs)
+- Retrospective confirmation — writing CONFIRMED without a prior Prediction block
 - Accepting a hypothesis without completing the Counterfactual Gate
 - Labeling a SYMPTOM-level hypothesis as ROOT_CAUSE
 - "Let me try this..." without evidence (shotgun debugging)
 - Unrelated changes in one Fix Session (related atomic edits are correct — shotgun multi-topic is not)
 - Fixing symptoms, not causes
+- **Working on Bug N+1 before Bug N is RESOLVED** — sequential completion violation
+- **Saying "should fix" / "probably works" / "looks correct"** — proof-of-fix violation
+- **Skipping the RED confirmation** — writing a fix before confirming the test actually fails
+- **Batching multiple bug fixes** — one at a time, always
 - Any status language not in the allowlist above
 - try/catch to hide errors | commenting out failing tests | "works on my machine" without investigation
 - Skipping UFSD Read at session start when a UFSD file exists
 - Leaving unvalidated ASSUMPTIONs without logging them as risk items in UFSD Write
+- **Skipping the debug journal** — no bug is closed without its journal

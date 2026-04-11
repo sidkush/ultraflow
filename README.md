@@ -1,6 +1,6 @@
 # UltraFlow
 
-Enhanced agentic skills framework for coding agents. Better brainstorming, smarter decisions, adversarial testing — in ~55% fewer tokens than alternatives.
+Enhanced agentic skills framework for coding agents. Better brainstorming, smarter decisions, adversarial testing, TDD-enforced debugging with post-mortem journals — in ~55% fewer tokens than alternatives.
 
 ## What's Different
 
@@ -18,7 +18,7 @@ Enhanced agentic skills framework for coding agents. Better brainstorming, smart
 2. **council** — 10 personas (Pragmatist, Architect, Hacker, Researcher, Minimalist, Futurist, Guardian, Optimizer, User Advocate, Integrator). Selects 5 per problem, synthesizes top 5 approaches
 3. **planning** — Streamlined plans with code intent (not full blocks), self-review via subagent
 4. **building** — Unified TDD + execution + inline code review. Test-first discipline enforced
-5. **debugging** — 4-phase systematic approach: observe, hypothesize, test, fix. Root cause first
+5. **debugging** — 5-phase systematic approach: observe, hypothesize, test, TDD fix loop, debug journal. Session-scoped (max 3 bugs, one at a time), TDD-enforced (write failing test → confirm red → fix → confirm green → regression check), proof-of-fix gated (no "should fix it" — show actual output), with mandatory post-mortem journals saved to `docs/ultraflow/debug-journals/`
 6. **adversarial-testing** — 5 breaker personas (Chaos Monkey, Pentester, Load Tester, Compatibility Checker, Regression Hunter). Fix-and-rebreak cycles
 7. **verification** — Evidence before assertions. Fresh command execution required before any success claim
 8. **git-flow** — Worktree creation + branch finishing in one skill
@@ -140,7 +140,10 @@ ultraflow/
 │   │   ├── SKILL.md
 │   │   ├── implementer.md
 │   │   └── reviewer.md
-│   ├── debugging/SKILL.md
+│   ├── debugging/
+│   │   ├── SKILL.md
+│   │   ├── skeptic.md
+│   │   └── debug-journal-template.md
 │   ├── adversarial-testing/
 │   │   ├── SKILL.md
 │   │   └── breaker-personas.md
@@ -157,6 +160,7 @@ ultraflow/
 |--------|------------|-----------|
 | Brainstorming | Linear Q&A, one question at a time | 5-stage progressive discovery with option cards |
 | Decision making | Single approach | Council of 5 personas → top 5 options |
+| Debugging | "Try this fix" loops | Session-scoped TDD fix loop + proof gates + debug journals |
 | Regression testing | Manual test suite runs | Adversarial breaker agents with fix-rebreak cycles |
 | TDD | Separate skill (extra load) | Embedded in building skill |
 | Code review | Separate skill (extra load) | Inline in building skill |

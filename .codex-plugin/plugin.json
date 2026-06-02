@@ -1,0 +1,48 @@
+{
+  "name": "ultraflow",
+  "version": "2.1.0",
+  "description": "AskDB-customized agentic skills framework with skills-on routing, council v2, audit, TDD, review, verification, and trust-layer doctrine.",
+  "author": {
+    "name": "UltraFlow Contributors",
+    "url": "https://github.com/sidkush/ultraflow"
+  },
+  "homepage": "https://github.com/sidkush/ultraflow",
+  "repository": "https://github.com/sidkush/ultraflow",
+  "license": "MIT",
+  "keywords": [
+    "skills",
+    "agentic",
+    "TDD",
+    "debugging",
+    "discovery",
+    "adversarial-testing",
+    "workflow",
+    "UFSD",
+    "council",
+    "trust-layer",
+    "askdb"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "UltraFlow",
+    "shortDescription": "AskDB workflow skills for Codex",
+    "longDescription": "UltraFlow provides AskDB-customized development workflow skills covering skills-on routing, requirement discovery, council v2, implementation planning, TDD building, debugging, adversarial testing, audit, verification, git flow, review handling, and trust-layer doctrine.",
+    "developerName": "UltraFlow Contributors",
+    "category": "Coding",
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/sidkush/ultraflow",
+    "privacyPolicyURL": "https://github.com/sidkush/ultraflow",
+    "termsOfServiceURL": "https://github.com/sidkush/ultraflow/blob/main/LICENSE",
+    "defaultPrompt": [
+      "Use UltraFlow to value-check and plan this AskDB feature",
+      "Use UltraFlow debugging on this failure",
+      "Run UltraFlow audit and verification"
+    ],
+    "brandColor": "#2563EB",
+    "screenshots": []
+  }
+}

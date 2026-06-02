@@ -1,177 +1,143 @@
 ---
 name: council
-description: Dispatches all 20 decision intelligence personas in parallel. Synthesizes into theme clusters with UFSD integration, Evidence Triangulation, Counterfactual Gate, and Assumption Registry. Zero routing shortcuts, zero persona sampling.
+description: Use when a decision needs multi-perspective review, architecture selection, trust-layer design, or root-cause escalation.
 ---
 
-# Multi-Agent Council
+# Council v2
 
 ## Core Principle
-Twenty cognitive modes. Every run. Always. No sampling, no shortcuts. The collective intelligence of all 20 perspectives, synthesized into themes — that is the council.
 
-## When to Use
-- After discovery produces a spec, before writing a plan
-- Any non-trivial architectural or implementation decision
-- Skip ONLY: single obvious correct answer (typo fix, trivial config)
+Council confirms decision themes only when evidence proves the code path is live and the frontend/operator surface is coherent. Vote count is secondary to reachability and wiring.
 
----
+## When To Use
 
-## Pre-Flight
+- Architecture or implementation approach choice.
+- Trust-layer design lock.
+- Stuck systematic-debugging loop.
+- Plan adversarial SPEC mode.
+- Any decision with conflicting evidence or meaningful rollback cost.
 
-### UFSD Read
-On entry, read the current UFSD. Extract any `[LOCKED]` decisions — do NOT re-debate them. Pass them to all personas as fixed constraints. Note which constraints originate from prior UFSD entries.
+## Preflight
 
-### Meta-Cognitive Failure Mode Map
-Before dispatch, identify the top 2 failure modes most likely for THIS session. Inject both into every persona prompt under `Council Risks:`.
+Read active UFSD from `docs/ultraflow/specs/`. Carry `[LOCKED]` decisions forward. Start with:
 
-| ID | Failure Mode | Signal |
-|----|-------------|--------|
-| FM-1 | Echo chamber | Problem framing already biases toward one approach |
-| FM-2 | Evidence fabrication | Personas cite plausible but unverifiable sources |
-| FM-3 | Minority suppression | Low-vote themes discarded before user review |
-| FM-4 | Cross-skill risks not propagated | Risks from prior UFSD sessions absent from context |
-| FM-5 | Irreversible decisions unflagged | Chosen approach locks in a path with high reversal cost |
+`REASONING EFFORT: high - council decision requires evidence synthesis`
 
----
+If the decision is trust-layer or high ambiguity, use `xhigh`.
 
-## Process
+## Mandatory Gates
 
-### Step 1: Extract Context
-```
-Problem: [≤100 words — what needs to be decided]
-Constraints: [≤50 words — hard limits + any UFSD-locked decisions]
-Known alternatives: [approaches already considered + reasons]
-Council Risks: [top 2 failure mode IDs + one-line mitigations]
-```
+These exact gate labels are shared with `ultraflow:adversarial-testing`:
 
-### Step 2: Dispatch All 20 Personas Simultaneously
-Launch **all 20** using the Agent tool in a **single parallel dispatch**. All 20 must return before synthesis begins.
+**GATE A - Reachability/Proof-of-Life:** a persona names the live entry path by grep/trace to the targeted code; dead code, non-existent APIs, or unreachable inputs cannot be CONFIRMED.
 
-Personas (dispatch all at once):
-1 Contrarian, 2 Actuarian, 3 Archaeologist, 4 Synthesizer, 5 Economist,
-6 Anthropologist, 7 Regulator, 8 Migrationist, 9 Epidemiologist, 10 Cognitive Load Auditor,
-11 Chronologist, 12 Measurement Skeptic, 13 Analogist, 14 Scope Prosecutor, 15 Debt Collector,
-16 Operator, 17 Build/Buy Arbitrageur, 18 Privacy Engineer, 19 Falsificationist, 20 Velocity Accountant
+**GATE B - Frontend-Wiring/Coherence:** a persona names the frontend seam that consumes the backend change, confirms payload-shape match, and accounts for loading, error, empty, stale, and agent-editability states.
 
-Each agent prompt:
-```
-You are [FULL PERSONA NAME] (persona #N): [PERSONA ONE-LINER].
+A theme cannot move from PROVISIONAL to CONFIRMED until both gates pass on the record. If a gate is irrelevant, record why as `N/A` with evidence.
 
-Problem: [PROBLEM]
-Constraints: [CONSTRAINTS — treat UFSD-locked items as non-negotiable]
-Known alternatives: [KNOWN ALTERNATIVES]
-Council Risks: [top 2 failure modes from Pre-Flight]
+## Always-On Lenses
 
-Embody your cognitive lens fully. Do not be balanced — the collective handles balance.
+Dispatch these lenses every decision run:
 
-Return ONLY this block:
-## [Approach Name — unique ≤5 words]
-- **Core idea**: [≤20 words, one clause, no semicolons]
-- **Key components**: [named files, services, patterns — not "TBD"]
-- **Effort**: S | M | L
-- **Primary risk**: [specific failure mode this approach is most vulnerable to]
-- **Why this wins**: [1 sentence — what this uniquely gets right]
-- **Evidence**: [specific: named pattern, benchmark, prior failure — "best practice" is INVALID]
-- **Assumptions**: [explicit, falsifiable — e.g. "assumes <100k rows"; will be logged to UFSD]
-- **Confidence**: [1-5 — if ≥4, provide 2 specific evidence items]
-[MAX 130 words]
-```
+1. Reachability/Proof-of-Life gate.
+2. Frontend-Wiring/Coherence gate.
+3. Determinism.
+4. Trust correctness.
+5. Trust contention.
+6. Trust durability.
+7. Contrarian/minority dissent.
+8. Distributed systems/event ordering.
+9. Paint/DOM frontend.
 
-**Anti-hallucination validation gate** (hard — blocks advancement):
-- Any field missing → **INCOMPLETE** — exclude from synthesis
-- Core idea >20 words or contains semicolons → **INCOMPLETE**
-- Evidence is generic ("analyzed tradeoffs", "best practice", "reviewed codebase") → **INCOMPLETE**
-- Approach Name duplicates another row → **INCOMPLETE**
-- Confidence ≥4 with only 1 Evidence item → downgrade to 3 automatically
-- Confidence ≤2 → **EXCLUDED** — re-dispatch once; if still ≤2, note and omit
-- Narrative prose instead of block format → **FABRICATED** — re-dispatch
+## Decision-Type Clusters
 
-**Partial failure**: Re-dispatch failed slots once. If still failing, proceed without and note count. Fewer than 12 valid rows → HALT, tell user, ask to proceed or re-run.
+Add only the relevant cluster lenses:
 
----
+| Decision type | Extra lenses |
+|---|---|
+| trust/isolation | tenant scope, auth, audit, secrets, file boundary |
+| agent-loop/SQL-gen | prompt/tool loop, SQL validator, scope validator, synthesis trust |
+| chart/worksheet-spec | visual spec, field pills, chart IR, operator editability |
+| data-path/waterfall | schema, memory, turbo twin, live tier, provenance |
+| frontend-UX | state inheritance, labels, failure UX, accessibility |
+| semantic-layer | metrics, dimensions, lineage, aggregation trust |
 
-### Step 3: Mega-Synthesis
+## Persona Dispatch
 
-**3a. Theme Clustering** — Group 20 responses by core mechanism (not surface wording). Identify 3–5 distinct themes. A theme requires ≥2 personas independently proposing the same underlying approach.
+Use `personas.md`. Dispatch relevant personas by lens, not decorative roles. The two gate personas are mandatory. Include Contrarian even for apparent consensus.
 
-**3b. Evidence Triangulation** — For each theme:
-- ≥2 independent personas reached the same mechanism → mark **CONFIRMED**
-- Single-persona mechanism → mark **PROVISIONAL**
-Record status in the Theme Table and UFSD.
+Each persona returns:
 
-**3c. Theme Table**:
 ```markdown
-| # | Theme | Core Mechanism | Personas Aligned | Vote | Status | Lead Risk | Dissent |
-|---|-------|---------------|-----------------|------|--------|-----------|---------|
-| 1 | [name] | [mechanism] | [names] | N/20 | CONFIRMED/PROVISIONAL | [risk] | [who + why] |
+## Persona
+Name:
+Lens:
+Evidence:
+Gate A: PASS|FAIL|N/A - <file:line or command>
+Gate B: PASS|FAIL|N/A - <file:line or command>
+Recommendation:
+Recovery path:
+Assumptions:
+Confidence: 1-5
 ```
 
-**3d. Counterfactual Gate** — Before finalizing any recommendation, state explicitly:
-> "Strongest counterargument against [Theme X]: [specific objection]. We accept this theme because: [specific rebuttal]. Both pass MVP-Proof."
-If the rebuttal fails MVP-Proof, demote the theme or raise a CONFLICT.
+Evidence must cite live files, commands, or probe output. Generic "best practice" evidence is invalid.
 
-**3e. Unanimous Concerns** (≥15/20 flag the same concern) — List each. NOT optional; must be addressed in any chosen approach.
+## Synthesis
 
-**3f. Strong Signals** (≥10/20 align on a theme) — Mark ⭐. If 2+ themes each reach ≥10 votes, Synthesizer (#4) output takes priority for the combined row.
+Cluster by mechanism, not wording. For each theme record:
 
-**3g. Minority Report** (<5 personas, substantively different) — List with reason it should not be ignored.
-
-**3h. Contradiction Map** — Directly conflicting factual claims (not just different opinions):
-> `CONFLICT: [PersonaA] claims [X] — [PersonaB] claims [Y]. Cannot both be true. Needs resolution before planning.`
-
-**3i. Assumption Registry** — Collect all `Assumptions` fields from valid persona responses. Deduplicate. Log to UFSD under `[ASSUMPTIONS]`.
-
-**3j. Coverage Score**:
-> `Council coverage: [domains covered] / [total domains examined]. Uncovered: [list].`
-> Disclosure only — user decides whether gaps matter.
-
----
-
-### Step 4: UFSD Write
-After synthesis, write two UFSD entries:
-
-**Summary** (replaces prior council summary in UFSD):
-```
-[COUNCIL SUMMARY]
-Decision: [chosen theme or PENDING user selection]
-Confidence: [CONFIRMED | PROVISIONAL]
-Top risks: [from Lead Risk column]
-Unanimous concerns: [list]
-Counterfactual accepted: [Y/N + one-line reason]
+```markdown
+| Theme | Mechanism | Personas | Gate A | Gate B | Status | Lead Risk | Recovery | Dissent |
 ```
 
-**Detail** (append to UFSD):
+Status rules:
+
+- **CONFIRMED:** at least two independent personas support the mechanism, Gate A passes, Gate B passes or is evidence-backed N/A, and recovery is named.
+- **PROVISIONAL:** evidence is promising but a gate, recovery path, or independent confirmation is missing.
+- **REJECTED:** unreachable, incoherent frontend seam, contradicted by evidence, or unbounded recovery.
+
+Do not ship PROVISIONAL as CONFIRMED.
+
+## Required Synthesis Sections
+
+- Theme table.
+- Unanimous concerns.
+- Minority report.
+- Contradiction map.
+- Assumption registry.
+- Counterfactual gate.
+- Recovery path for fail-closed decisions.
+- Sequencing by decision leverage: cheap gates before expensive builds.
+- Coverage score and uncovered lenses.
+
+## UFSD Write
+
+Append to `docs/ultraflow/specs/<active UFSD>`:
+
+```markdown
+## council - <date>
+Decision:
+Theme status:
+Gate A:
+Gate B:
+Recovery path:
+Assumptions:
+Counterfactual:
 ```
-[COUNCIL DETAIL — <date>]
-Theme table: [full table]
-Assumption Registry: [deduplicated list]
-Coverage Score: [domains / total, uncovered list]
-Locked decisions carried forward: [from UFSD Read]
-```
 
----
+## User Selection
 
-### Step 5: User Selection
-Present: Theme Table + Unanimous Concerns + Coverage Score + any CONFLICT flags.
+Ask the user to choose, combine, or revise when multiple viable themes remain. Do not infer preference from earlier conversation if the council surfaced new evidence.
 
-**AskUserQuestion is mandatory** — do NOT infer preference from prior conversation even if user expressed one earlier.
+## Relationship To Adversarial
 
-- User picks theme → proceed to `planning`; UFSD decision inherits CONFIRMED or PROVISIONAL status from triangulation
-- User requests combine → write combined approach citing source themes, validate all 8 fields, mark `[COMBINED: Theme1 + Theme2]`
-- User wants refinement → adjust and re-present once. On 2nd adjustment request → ask user to restart discovery with refined spec
-- CONFLICT present → do not proceed to planning until user resolves the factual conflict
-
----
+Council chooses or validates a direction. `ultraflow:adversarial-testing` attacks the chosen direction or plan. Both share Gate A and Gate B wording so a plan cannot bypass reachability or frontend coherence.
 
 ## Anti-Patterns
-- Dispatching fewer than 20 personas because the problem "seems simple"
-- Synthesizing personas in your head instead of using the Agent tool for each
-- Presenting a 20-row table instead of 3–5 theme synthesis
-- Letting highest vote count automatically win (low-vote themes may be correct)
-- Skipping Unanimous Concerns because user didn't ask
-- Treating INCOMPLETE or FABRICATED rows as valid synthesis input
-- Marking Confidence ≥4 without 2 specific evidence items
-- Proceeding to planning with unresolved CONFLICT flags
-- Skipping the Counterfactual Gate before presenting a recommendation
-- Skipping UFSD Read (re-debating locked decisions wastes context)
-- Omitting Coverage Score (Disclosure only, but never skip it)
-- Omitting Assumption Registry from UFSD Write
+
+- Confirming themes without both gates.
+- Treating vote count as truth.
+- Letting generic personas replace live evidence.
+- Detection without recovery.
+- Proceeding to `ultraflow:writing-plans` with unresolved factual contradictions.

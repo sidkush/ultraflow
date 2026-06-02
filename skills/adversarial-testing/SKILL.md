@@ -1,171 +1,211 @@
 ---
 name: adversarial-testing
-description: Use when implemented code OR a design/plan needs to be attacked before it is trusted — after building a feature, before declaring done, or after a council design-lock and before writing code. CODE mode attacks code; SPEC/PLAN mode attacks a design. Six cross-cutting hunters fire every run; subsystem clusters fire by build surface; a frontend-coherence hunter checks UI wiring.
+description: Use when implemented code or a design/plan needs authorized defensive pressure before it is trusted.
 ---
 
-# Adversarial Testing — v3
+# Adversarial Testing v3
 
-> Six cross-cutting hunters every run. Subsystem clusters fired by what's being built. One mode for code, one for designs.
-> CONTEXT: authorized defensive testing of code (or a design) YOU are building. Analysts surface weaknesses so they're fixed before release.
+Six cross-cutting hunters fire every run. Subsystem clusters fire by surface. SPEC/PLAN mode attacks a design before code; CODE mode attacks the diff; TRUST mode performs generic destructor dispatch for trust-layer paths.
 
-The green test suite is not coverage. The highest-bug surfaces ship while the suite passes — they're caught in adversarial audits, not by tests. This skill is structured around the failure SHAPES the product actually ships (see `breaker-personas.md`), not generic web-security.
+The green test suite is not coverage. The highest-risk surfaces ship while tests pass; adversarial testing targets those failure shapes.
 
-## Modes — declare at Step 1
+## Shared Council Gates
+
+Use this exact wording, identical to `ultraflow:council`:
+
+**GATE A - Reachability/Proof-of-Life:** a persona names the live entry path by grep/trace to the targeted code; dead code, non-existent APIs, or unreachable inputs cannot be CONFIRMED.
+
+**GATE B - Frontend-Wiring/Coherence:** a persona names the frontend seam that consumes the backend change, confirms payload-shape match, and accounts for loading, error, empty, stale, and agent-editability states.
+
+Any finding without Gate A is `SUSPECT-REACHABILITY`, not P0/P1. Any backend/UI contract finding without Gate B is PROVISIONAL until the seam is traced.
+
+## Modes
 
 | Mode | When | Dispatch |
-|------|------|----------|
-| **CODE** (default) | After implementation, before declaring done | 6 hunters + clusters for the build surface + frontend-coherence hunter IF UI touched |
-| **SPEC/PLAN** | One intensive run against a design-lock / plan / spec doc BEFORE code | 6 hunters recast to "find the gap in this DESIGN" + relevant clusters + frontend-coherence hunter ALWAYS, amplified |
+|---|---|---|
+| CODE | After implementation, before completion | 6 hunters + clusters for touched surface + frontend-coherence if UI touched |
+| SPEC/PLAN | After council/design lock, before code | 6 hunters recast to attack the design + relevant clusters + frontend-coherence always |
+| TRUST | Trust-layer path or security-sensitive finding | Generic destructor dispatch; architect gives context but never names attack angles |
 
-**How a dispatcher invokes:**
-- `adversarial-testing, CODE mode, building: <surface>` — e.g. `building: chart-editor`
-- `adversarial-testing, SPEC mode, target: <plan/spec doc path>`
-- No mode stated → **CODE**. No surface stated → infer from the diff, then state the inference.
+Invocation examples:
 
-**Relationship to `council`:** council finds gaps and BUILDS the plan; adversarial ATTACKS it. SPEC mode is the adversarial complement to a council design-lock — run `council` first, then `adversarial-testing` SPEC mode on the locked design. CODE mode is the post-build attack before `verification`.
+- `adversarial-testing, CODE mode, surface: chart-editor`
+- `adversarial-testing, SPEC mode, target: docs/ultraflow/specs/...`
+- `adversarial-testing, TRUST mode, surface: auth/audit/scope`
 
-## Dispatch Map — which clusters auto-fire (6 hunters always fire)
+Council chooses or validates a direction. Adversarial attacks it. Run `ultraflow:council` before SPEC mode when the design is not locked.
 
-| Building | Clusters |
-|----------|----------|
+## Dispatch Map
+
+| Surface | Clusters |
+|---|---|
 | trust-layer | TRUST/AUDIT + VALIDATOR + AGENT-LOOP |
-| chart / editor | CHART/MARKS + EDITOR-STATE + FRONTEND + **frontend-coherence** |
-| auth / connection | VALIDATOR/SECURITY/AUTH + TRUST |
-| agent / SQL | AGENT-LOOP + WATERFALL/TWIN + SEMANTIC |
-| dashboard / UI | EDITOR-STATE/DASHBOARD + FRONTEND + **frontend-coherence** |
-| data-path | WATERFALL/TWIN + COVERAGE (in the WATERFALL cluster) + TRUST |
+| chart/editor | CHART/MARKS + EDITOR-STATE + FRONTEND + frontend-coherence |
+| auth/connection | VALIDATOR/SECURITY/AUTH + TRUST |
+| agent/SQL | AGENT-LOOP + WATERFALL/TWIN + SEMANTIC |
+| dashboard/UI | EDITOR-STATE/DASHBOARD + FRONTEND + frontend-coherence |
+| data-path | WATERFALL/TWIN + COVERAGE + TRUST |
 
-The caller may add clusters. **The six hunters are non-optional in every mode.**
+The caller may add clusters. The six cross-cutting hunters are non-optional in every mode.
 
-## Meta-Cognitive Failure Mode Map (check before Step 1)
-1. **Scope drift** — analysts attack adjacent systems. Fix: lock attack surface + dispatch selection in Step 1.
-2. **Hallucinated findings** — fabricated reproduce steps. Fix: anti-hallucination gate (Step 2).
-3. **UFSD blind spot** — council-flagged risks not used as attack vectors. Fix: UFSD Read (Step 1).
-4. **Confirmation bias** — analysts validate instead of break. Fix: enforce BROKEN|FRAGILE|SOLID only.
-5. **Coverage illusion** — INVALID / DEAD-CODE findings counted as coverage. Fix: Coverage Score + reachability gate (Step 3).
-6. **Backend-heavy blind spot** — UI wiring ships thin and incoherent. Fix: frontend-coherence hunter (always-on in SPEC mode).
+## Failure Mode Map
 
-## Step 1: Mode + Target + UFSD Read + Dispatch Selection
+1. Scope drift: lock attack surface and selected clusters.
+2. Hallucinated findings: require exact reproduce or design-cited scenario.
+3. UFSD blind spot: read risks from `docs/ultraflow/specs/`.
+4. Confirmation bias: force BROKEN/FRAGILE/SOLID verdicts.
+5. Coverage illusion: INVALID or dead-code findings do not count.
+6. Backend-heavy blind spot: frontend-coherence is always-on in SPEC mode.
+
+## Step 1: Mode, Target, UFSD, Dispatch Selection
+
+```markdown
+Mode: CODE | SPEC/PLAN | TRUST
+Target:
+Attack surface:
+Design claims:
+Change scope:
+UI touched:
+Clusters selected:
+Gate A required: yes|no
+Gate B required: yes|no
 ```
-Mode: CODE | SPEC/PLAN
-Target: [≤100 words — code surface, or the design/plan doc path]
-Attack surface: [entry points, data flows, auth, integrations]   (CODE)
-   — or — Design claims: [happy path the design names + what it leaves implicit]   (SPEC)
-Change scope: [files, APIs, schemas]; Known weak points: [suspected fragility]
-UI touched? [yes/no]  →  decides frontend-coherence hunter in CODE mode
-Clusters selected: [from Dispatch Map + any caller additions]
-```
-**UFSD Read**: extract all `risk:` items from any council UFSD block in `docs/ultraflow/specs/` → add as mandatory attack vectors.
 
-## Step 2: Dispatch — 6 hunters + selected clusters + frontend-coherence
-Read `breaker-personas.md` for full profiles. Dispatch all selected analysts via the Agent tool in **one parallel call**. All must return before triage.
+Read the active UFSD from `docs/ultraflow/specs/` and add council `risk:` items as mandatory attack vectors.
 
-**Always:** H1 Silent-Wrong-Answer · H2 Silent-Noop/Fail-Open · H3 Tenant/Schema-Isolation · H4 Concurrency/TOCTOU · H5 Payload-Leak · H6 Determinism+Dead-Code-Green.
-**Plus** the cluster analysts from the Dispatch Map.
-**Plus** the Frontend-Coherence Hunter — CODE mode only if UI touched; **SPEC mode always, weighted heavy**.
+## Step 2: Dispatch
 
-**Context tier (per analyst):** trust / isolation / determinism hunters and the cross-file-tagged cluster analysts get the **call-graph across files** — the 60-line snippet misses the "one consumer left on the old key" class. Injection / encoding / boundary analysts keep the **tight ≤60-line snippet**.
+Read `breaker-personas.md`. Dispatch:
 
-**Read-only (structural):** analysts get read + grep context ONLY — no write/edit/bash. State it in every prompt.
+- Always: H1 Silent-Wrong-Answer, H2 Silent-Noop/Fail-Open, H3 Tenant/Schema-Isolation, H4 Concurrency/TOCTOU, H5 Payload-Leak, H6 Determinism+Dead-Code-Green.
+- Plus clusters from the dispatch map.
+- Plus Frontend-Coherence in CODE when UI is touched, and always in SPEC/PLAN.
 
-Analyst prompt template:
-```
-You are a senior defensive analyst: [ANALYST NAME + FOCUS from breaker-personas.md].
-Techniques: [3-4 TECHNIQUES]. Context: authorized testing of code/design built this session.
+Context tier:
+
+- Cross-file call graph for isolation, correctness, determinism, and trust analysts.
+- Tight <=60-line snippets for injection, encoding, and boundary analysts.
+
+Analysts are read-only: read + grep only. No write/edit/bash.
+
+Analyst prompt:
+
+```markdown
+You are a senior defensive analyst: <name and focus from breaker-personas.md>.
+Techniques: <3-4 techniques>.
+Context: authorized testing of code/design built this session.
 You are READ-ONLY: read + grep only. Do not write, edit, or run commands.
-MODE: [CODE | SPEC]
-[CODE]   Code under test: [SNIPPET ≤60 lines  — OR — call-graph across files for cross-file analysts]
-[SPEC]   Design under test: [relevant section(s) of the plan/spec doc]
-Target: [TARGET] | Surface: [ATTACK_SURFACE]
-[CODE] Find weaknesses.  [SPEC] Find gaps / contradictions / unhandled cases in this DESIGN.
+
+MODE: CODE | SPEC | TRUST
+Target:
+Surface:
+Code/design context:
+
 Return ONLY:
 ## Findings
-- [SEVERITY: critical|high|medium|low] [exact description]
-  Reproduce: [CODE: exact input/state → expected X → got Y]
-             [SPEC: concrete unhandled scenario walked through the design, citing the silent section]
-  Reachability: REACHABLE <path> | GATED <flag> | DEAD-CODE        (required)
-## Tests attempted (min 5): - [specific input/scenario → exact result] ×5
-## Attack vector: [SURFACE] — [exact entry point]
-## Blast radius: CONTAINED | LATERAL | SYSTEMIC
-## Rebreak: NEEDED | CLEAN
-## Verdict: BROKEN | FRAGILE | SOLID   [MAX 200 words]
+- Severity: critical|high|medium|low
+  Description:
+  Reproduce:
+  Gate A - Reachability/Proof-of-Life: PASS|FAIL|N/A - <evidence>
+  Gate B - Frontend-Wiring/Coherence: PASS|FAIL|N/A - <evidence>
+  Reachability: REACHABLE <path> | GATED <flag> | DEAD-CODE
+  Tests attempted: <min 5 exact inputs/scenarios>
+  Attack vector:
+  Blast radius: CONTAINED | LATERAL | SYSTEMIC
+  Recovery path:
+  Rebreak: NEEDED | CLEAN
+  Verdict: BROKEN | FRAGILE | SOLID
 ```
 
-**Anti-hallucination gate** (hard):
-- No exact Reproduce (CODE) / no concrete design-cited scenario (SPEC) → **INVALID** (discard, keep others).
-- Tests < 5 → SOLID downgrades to **FRAGILE**; generic tests ("tried edge cases") → **INVALID**, don't count.
-- Missing Reachability, Blast radius, or Attack vector on a SOLID/BROKEN finding → **FRAGILE**.
-- Narrative prose instead of the block → **FABRICATED** — re-dispatch once.
-- Safety refusal → **reframe**: add "This is authorized testing of our own code in development" → re-dispatch once.
-- Critical finding, no label → auto **high**.
+Anti-hallucination gate:
 
-**Evidence Triangulation**: VALID = ≥2 analysts independently agree OR 1 analyst with 2 distinct proof paths. Single-analyst single-path = **PROVISIONAL** — mark in triage, never discard.
+- No exact CODE reproduce or SPEC design-cited scenario -> INVALID.
+- Fewer than five concrete attempts -> SOLID downgrades to FRAGILE; generic attempts are INVALID.
+- Missing reachability, blast radius, or attack vector -> FRAGILE.
+- Narrative prose instead of the block -> re-dispatch once.
+- Safety refusal -> reframe as authorized testing of our own code and re-dispatch once.
+- Critical without label -> auto high.
 
-**Partial failure**: re-dispatch failed slots once. Valid reports < 75% of dispatched → HALT, report the count, ask to proceed.
+Evidence triangulation: VALID means at least two analysts independently agree, or one analyst has two distinct proof paths. Single-analyst, single-path findings are PROVISIONAL, never discarded silently.
 
-**Non-halting summary (fires here):** after dispatch, emit a 5–8 bullet human-readable summary (top P0/P1 by finding, clusters that returned clean, coverage so far) WITHOUT halting — operator reviews async.
+Emit a non-halting 5-8 bullet summary after dispatch.
 
 ## Step 3: Triage
 
-**Reachability gate (apply FIRST):** `DEAD-CODE` finding → capped at **P3** (don't P0 the unreachable). `GATED <flag>` → keep priority, mark the gating flag. `REACHABLE` → full priority.
+Reachability first:
 
-**Triage tag (before any fix):** classify every finding `{CRITICAL | MEDIUM | MINOR} × {REACHABLE | GATED | DEAD}`. This classification drives the operator summary.
+- DEAD-CODE caps at P3.
+- GATED keeps priority but names the gating flag.
+- REACHABLE can be P0/P1.
 
-**Severity × Blast Radius → Priority**:
-```
+Before P0:
+
+1. Gate A must pass.
+2. If frontend/operator surface is involved, Gate B must pass.
+3. Check `docs/superpowers/triage/falsified-findings-registry.md`.
+
+Priority matrix:
+
+```text
               CONTAINED  LATERAL  SYSTEMIC
-critical  →     P1         P0       P0
-high      →     P2         P1       P1
-medium    →     P3         P2       P2
-low       →     P4         P3       P3
-```
-P0=stop everything · P1=fix before proceeding · P2=fix if <10 min else document · P3=document · P4=backlog
-
-**Triage Table** — sort P0 first, include all BROKEN/FRAGILE, mark PROVISIONAL:
-`| Priority | Analyst | Severity | Blast | Reachability | Finding | Reproduce | Evidence |`
-
-- **Unanimous Weakness** (≥15 analysts — or ≥75% when fewer than 20 dispatched — same class) → structural; address before closing.
-- **Strong Attack Signal** (≥10, or ≥50% of dispatched, same surface) → WARNING. Two+ surfaces → escalate to user before fixing.
-- **Minority Discovery** (<3 analysts, critical/high) → list with name; never discard.
-- **Clean Analysts** → list SOLID reporters (confirmed-safe surfaces).
-
-**Coverage Score** (disclosure only — user decides if sufficient):
-`Hunters: [N/6 SOLID]; Clusters dispatched: [M]; clusters SOLID: [K/M]; Frontend-coherence: [SOLID | GAPS | N/A].`
-
-**Non-halting summary (fires here):** emit the 5–8 bullet summary again — what's P0/P1, what was folded, coverage — without halting.
-
-## Step 4: Fix-and-Rebreak Cycle
-
-**Falsified-findings registry:** maintain a list of disproven findings. Before re-triaging any round, check it — a falsified finding is NOT re-raised in a later round.
-
-Rebreak scope: `CONTAINED` → analyst only · `LATERAL` → full cluster · `SYSTEMIC` → all dispatched.
-
-P0/P1: fix → re-dispatch with `Delta: [file:lines — what changed]` → confirm CLEAN. Still BROKEN → retry (max 3 attempts).
-P2: fix → single-analyst rebreak → CLEAN or document as known limitation.
-
-**Non-halting summary** fires after each rebreak round (what's now CLEAN, what remains, attempt count) — without halting.
-
-**Skill Chain Interrupt**: SYSTEMIC BROKEN after 3 attempts → UPSTREAM halt + write `[RESTART REQUESTED]` to UFSD + ask user before any further action. Two+ Strong Attack Signal surfaces → architectural failure → `[RESTART REQUESTED]` to UFSD + escalate to `ultraflow:council`.
-
-## Step 5: Final Verdict + UFSD Write
-
-CODE: all analysts SOLID/FRAGILE (P2+ documented) → proceed to `verification`.
-SPEC: all gaps resolved or folded into the design → return the revised design; P0/P1 gaps fold into the plan BEFORE code.
-Any still BROKEN after 3 attempts → escalate:
-```
-## Adversarial Escalation
-Analyst: [name] Cluster: [name] Priority: [P0/P1] Blast: [radius] Reachability: [tag]
-Finding: [broken] Blocked by: [root cause] Needs: [recommendation]
-Attempts: 1=[tried→result] 2=[tried→result] 3=[tried→result]
+critical         P1        P0        P0
+high             P2        P1        P1
+medium           P3        P2        P2
+low              P4        P3        P3
 ```
 
-**UFSD Write** (append to active spec in `docs/ultraflow/specs/`):
-```
-## UFSD adversarial-testing [date]  Mode: [CODE|SPEC]
-Verdict: [PASS|ESCALATED|RESTART REQUESTED] | Coverage: [hunters N/6, clusters K/M, FC]
-Contradictions: [PROVISIONAL findings that conflicted across analysts]
-Detail: [P0/P1 findings with reproduce steps + reachability tags]
+Triage tag every finding as `{CRITICAL|MEDIUM|MINOR} x {REACHABLE|GATED|DEAD}` before fixing.
+
+Coverage score:
+
+`Hunters: N/6 SOLID; Clusters dispatched: M; clusters SOLID: K/M; Frontend-coherence: SOLID|GAPS|N/A`
+
+## Step 4: Fix And Rebreak
+
+Maintain a falsified-findings list. Re-check it before re-triage.
+
+Rebreak scope:
+
+- CONTAINED: original analyst.
+- LATERAL: full cluster.
+- SYSTEMIC: all dispatched.
+
+P0/P1: fix before proceeding, rebreak, retry up to three attempts. Still BROKEN after three attempts -> write `[RESTART REQUESTED]` to UFSD and escalate to `ultraflow:council`.
+
+P2: fix if cheap and scoped; otherwise document and defer.
+
+P3/P4: document or defer to `docs/superpowers/triage/deferred-bugs.md`.
+
+Emit non-halting summaries after every rebreak round.
+
+## Step 5: Final Verdict And UFSD Write
+
+CODE: all analysts SOLID/FRAGILE with P2+ documented -> proceed to `ultraflow:verification-before-completion`.
+
+SPEC/PLAN: all gaps resolved or folded into the design before code.
+
+Append to active UFSD:
+
+```markdown
+## adversarial-testing - <date>
+Mode:
+Verdict:
+Gate A summary:
+Gate B summary:
+Coverage:
+P0/P1 findings:
+Deferred:
+Recovery paths:
 ```
 
 ## Anti-Patterns
-- Skipping any of the 6 cross-cutting hunters · dispatching all clusters regardless of surface (scope drift) · omitting the frontend-coherence hunter in SPEC mode · fabricating responses · skipping SYSTEMIC rebreak · INVALID or DEAD-CODE findings counted as coverage · P0 deferred while P2/P3 fixed · PROVISIONAL discarded · re-raising a falsified finding · giving analysts write/edit access · halting on the per-round summary · proceeding to verification with any analyst BROKEN
+
+- Skipping any cross-cutting hunter.
+- Dispatching all clusters regardless of surface.
+- Omitting frontend-coherence in SPEC mode.
+- Architect-named attackers in TRUST mode.
+- P0 without reachability.
+- Counting INVALID or DEAD-CODE findings as coverage.
+- Re-raising a falsified finding.
+- Giving analysts write/edit access.
+- Proceeding to verification with BROKEN P0/P1 findings.

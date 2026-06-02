@@ -1,62 +1,101 @@
 ---
 name: using-ultraflow
-description: Use at conversation start. Establishes skill routing, token-aware workflow, and instruction priority. Invoke BEFORE any response including clarifying questions.
+description: Use at conversation start. Establishes AskDB UltraFlow skill routing, model routing, preflight discipline, and anti-drift rules.
 ---
 
-## Instruction Priority
-1. **User instructions** (CLAUDE.md, direct requests) — highest
-2. **UltraFlow skills** — override defaults where they conflict
-3. **System prompt** — lowest
+# Using UltraFlow
 
-## The Rule
-**Invoke relevant skills BEFORE any response or action.** Even 1% chance = invoke it.
+## Core Stance
 
-## Intent Echo (Mandatory)
-Before executing ANY user request, echo back what you understood in 1 sentence. Wait for user confirmation. This catches misinterpretation before work begins. Format: "I understand you want me to: [1 sentence]. Correct?"
+UltraFlow is the active methodology namespace. Use `ultraflow:*` skills directly. Superpowers remains an upstream rigor source only; do not instruct agents to invoke `superpowers:*` after this fork.
 
-If user says **No**: ask "What should I correct?" Re-echo once with the correction applied. If still rejected → proceed with best interpretation and note inline: "(Proceeding with best understanding — please correct mid-task if needed.)"
+**Skills are on in both layers:** Opus orchestrates probe, architecture, council, and design lock; Codex executes with TDD, subagents, debugging, review, verification, and git discipline.
 
-## Available Skills
+## Intent Echo
 
-| Skill | Trigger | ~Tokens |
-|-------|---------|---------|
-| `discovery` | Before any creative/implementation work | 800 |
-| `council` | When choosing between implementation approaches | 300+1500 |
-| `planning` | When spec exists, before coding | 600 |
-| `building` | When plan exists, ready to implement | 700 |
-| `debugging` | Any bug, test failure, unexpected behavior | 500 (simple) / 1500 (complex w/ Skeptic) |
-| `adversarial-testing` | CODE: after implementation, before done. SPEC: on a locked design, before code | 650 |
-| `verification` | Before claiming work is complete | 300 |
-| `git-flow` | Starting isolated work or finishing a branch | 400 |
-| `receiving-review` | When receiving code review feedback | 250 |
-| `parallel-dispatch` | 2+ independent tasks without shared state | 300 |
+Before substantial work, state the intended outcome in one sentence. If the user gave a complete dispatch, continue after the echo unless the dispatch contains an unresolved design fork.
 
-## Workflow Graph
-```
-discovery → council → planning → building → adversarial-testing → verification → git-flow
-                                     ↕              ↕                                ↓
-                                 debugging    parallel-dispatch          receiving-review (on PR feedback)
-```
+## Model Routing
 
-## Token Budget Awareness
-Each skill lists its token cost. Before invoking expensive skills, consider:
-- Is the task complex enough to justify the cost?
-- Can a lighter skill handle it?
-- For trivial tasks (typo, single-line change): skip discovery/council, go straight to building.
-- **Token budget NEVER justifies skipping rigid skills** (building, debugging, verification).
+- **Opus:** thinking layer for probes, root cause, architecture, design lock, council, destructor triage, and "which path is live" ambiguity.
+- **Codex:** execution layer for TDD, folds, tests, skill authoring, docs, and git. Codex is also the honest gatekeeper: it reports blocked or unverified states plainly.
+- **Trust-layer architecture bugs:** route to Opus even if the next action is implementation.
+- **Long executions on Opus:** forbidden; they fabricate verification.
 
-## Anti-Drift Protocol (Context Decay Detection)
-Track tasks since last skill re-read. Thresholds:
-- **Every 5 tasks**: Re-read this file silently to recalibrate.
-- **Every 10 tasks**: Re-read ALL active skill files.
-- **After any context compaction**: Re-invoke this skill immediately.
-- **Never trust a subagent's claim** without running verification yourself.
-If you notice yourself skipping steps or abbreviating processes → you are drifting. Re-read NOW.
+Every executor dispatch begins:
 
-## Skill Types
-- **Rigid** (building, debugging, verification, receiving-review): Follow exactly. No shortcuts. Note: debugging has a Simple/Complex tiered entry — Simple path is an explicit branch, not a shortcut.
-- **Flexible** (discovery, council, planning): Adapt depth to task complexity.
-  - **Minimum floor for flexible skills**: discovery must always complete Stages 1-2. Council must dispatch at least 3 real agents. Planning must always run self-review.
+`REASONING EFFORT: <none|low|medium|high|xhigh> - <one clause why>`
 
-## Red Flags
-Any thought starting with "this doesn't need a skill", "let me just do X first", "the skill is overkill", "I need context first", or "it's just a simple question" is rationalization. **Check the skill table before acting.**
+Default is `medium`. Use `low` for mechanical one-file edits, `high` for multi-file synthesis not probe-mapped, and `xhigh` for trust-layer architecture, deep root cause, or high-ambiguity specs. Raise effort only after improving decomposition.
+
+## Value Check
+
+Before any plan, answer:
+
+1. Does this improve a real operator or user flow?
+2. Would we build it if paying an engineer hourly cash?
+3. Does it reduce an active bottleneck, trust gap, support burden, retention risk, or differentiation gap?
+
+If no, defer to `docs/superpowers/triage/deferred-bugs.md`. Do not plan.
+
+## Two Orthogonal Axes
+
+**Commit tier = scope and prompt shape.**
+
+| Tier | Shape | Required flow |
+|---|---|---|
+| T1 | <=5 lines, 1 file, no contradictory evidence | Single autonomous TDD with halt-on-drift |
+| T2 | <=30 lines, 1-2 files, edge cases enumerable | Split probe then TDD |
+| T3 | Architecture, concurrency, multiple sources of truth, or contradictory evidence | Probe -> destructor -> architect design -> step TDD |
+
+**Finding priority = severity x blast radius.** P0-P4 belongs to adversarial/debug triage. Never merge commit tier with finding priority.
+
+## AskDB Rules To Carry Everywhere
+
+- **Preflight GO/NO-GO:** every executor run checks git status, branch, recent log, and current test baseline. Dirty tree or branch mismatch halts unless the operator explicitly scoped the dirty files.
+- **Rule 13 reachability:** before flagging a destructor finding, grep callers and trace input shape from the live entry path. Zero callers or an upstream gate that blocks the bad shape means `SUSPECT-REACHABILITY`.
+- **Rule 14 runtime probe:** before design lock, verify call frequency, schema availability, library/runtime semantics, and deployment topology empirically.
+- **Rule 21 invocation surface:** probe callers with `<name>(`, subprocess/PATH availability, traversal scope, symlinks, version behavior, and thread/process assumptions. Do not stop at `def <name>`.
+- **Falsified registry first:** consult `docs/superpowers/triage/falsified-findings-registry.md` before re-triage.
+- **TDD bug fix canonical:** failing test -> RED -> minimal fix -> GREEN + suite -> diff + commit. GREEN-on-arrival is information, not permission to skip.
+- **Operator comprehension is correctness:** UUID dropdowns, `[object Object]` banners, hidden controls, and unreadable states are broken even if tests pass.
+- **Ship gate:** smoke from the real app entry, real login, happy path, at least one failure mode, clean console, and human-readable labels/errors. Agents mark UI smoke `NOT EXECUTED - deferred for manual verification` unless the operator explicitly asks the execution layer to run it.
+- **No live LLM/API in tests:** mock at the network boundary.
+- **Jira discipline:** executor runs reference a ticket, comment progress/blockers/SHA/next step, and move status only with evidence.
+- **Git discipline:** never auto-create worktrees or branches. Operator manages branches. Skills verify the branch in place. Dirty tree -> halt and ask. On Windows, avoid `&&`, `sed -i`, path-separator traps, and heredoc commit messages; use explicit commands and UTF-8-no-BOM temp files for multiline commits.
+- **No calendar estimates:** scope in commits, component count, and decision dependencies.
+- **Deferred bugs:** use `docs/superpowers/triage/deferred-bugs.md` as the canonical sink; do not fork it.
+
+## Skill Routing
+
+| Need | Use |
+|---|---|
+| Creative/design discovery | `ultraflow:brainstorming` |
+| Decision between approaches | `ultraflow:council` |
+| Multi-step implementation plan | `ultraflow:writing-plans` |
+| Implement feature or bugfix | `ultraflow:test-driven-development` |
+| Execute independent plan tasks | `ultraflow:subagent-driven-development` |
+| Request reviewer pass | `ultraflow:requesting-code-review` |
+| Unexpected failure or bug | `ultraflow:systematic-debugging` |
+| Independent investigations | `ultraflow:dispatching-parallel-agents` |
+| Security/regression pressure | `ultraflow:adversarial-testing` |
+| Completion claim or commit gate | `ultraflow:verification-before-completion` |
+| Finish branch/PR/merge choice | `ultraflow:finishing-a-development-branch` |
+| Code review feedback received | `ultraflow:receiving-review` |
+| Periodic 4+1 read-only audit | `ultraflow:audit` |
+
+UI/UX work routes first through taste/impeccable/ui-ux-pro-max/frontend-design, then back to UltraFlow for plan/execution gates.
+
+## Workflow
+
+Opus: probe and gather evidence -> brainstorming -> council -> write spec/plan -> adversarial-testing in SPEC mode -> revise -> hand to Codex.
+
+Codex: preflight -> TDD/subagent execution -> council/adversarial rounds where warranted -> systematic-debugging on RED/GREEN failures -> verification-before-completion -> finishing-a-development-branch.
+
+## UFSD
+
+The canonical UltraFlow State Document location is `docs/ultraflow/specs/`. All skills read and write UFSD entries there. Do not reference legacy non-specs UFSD locations or filename conventions.
+
+## Anti-Drift
+
+Re-read this spine after context compaction, after five tasks, or whenever you notice yourself skipping preflight, TDD, review, or verification. Never trust a subagent's completion claim without your own diff and verification.

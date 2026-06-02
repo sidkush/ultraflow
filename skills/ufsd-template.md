@@ -1,53 +1,41 @@
-# UFSD — UltraFlow State Document
+# UFSD - UltraFlow State Document
 
-Two-layer cross-skill state propagation. Every skill reads the Summary on entry, writes Summary + Detail on exit.
+Canonical location: `docs/ultraflow/specs/`.
 
-## Summary Layer (≤3 lines, ≤50 tokens)
+Canonical filename: `UFSD-YYYY-MM-DD-<feature>.md` or `DRAFT-UFSD-YYYY-MM-DD-<feature>.md`.
 
-Read by all downstream skills for cheap context. Key-value format:
-```
-feature=[name] | approach=[decision] | scope=[1-line boundary]
-risk=[top risk] | confidence=[1-5] | open=[unresolved items]
-assumptions=[comma-list] | invariants=[comma-list]
-```
+Do not reference legacy non-specs UFSD locations or filename conventions.
 
-**Rules**: Updated (not appended) after every skill. Only the latest state matters.
+## Summary Layer
 
-## Detail Layer (≤20 lines per skill)
-
-Append-only prose sections. One block per skill that has executed:
-```
-## [skill-name] — [date]
-### Decisions
-- [decision] — Rationale: [reason]
-### Assumptions Logged
-- ASSUMPTION: [text] | VALIDATED: [yes|no|pending]
-### Findings
-- [finding — with evidence per MVP-Proof]
-### Open Questions
-- [question]
+```markdown
+# UFSD Summary
+Feature:
+Ticket:
+Entry point:
+Happy path:
+Scope baseline: In: [...] Out: [...]
+Risk class: Feature/UI | Trust-layer
+Commit tier: T1 | T2 | T3
+Two-gate status: Reachability=<pass|fail|n/a>; Frontend wiring=<pass|fail|n/a>
+Pipeline stage: brainstorming | council | writing-plans | execution | adversarial | verification | done
+Deferred bugs link: docs/superpowers/triage/deferred-bugs.md
 ```
 
-**Rules**: Appended, never overwritten. Each skill adds one block. Total UFSD ≤150 lines after full pipeline.
+## Detail Blocks
 
-## Size Caps (Enforced)
+Append, never overwrite:
 
-| Layer | Cap | Enforcement |
-|-------|-----|-------------|
-| Summary | 3 lines, ≤50 tokens | Skill must truncate before writing |
-| Detail per skill | ≤20 lines | Skill must compress if over |
-| Total UFSD | ≤150 lines | Final skill checks and warns if exceeded |
+```markdown
+## <skill-name> - <date>
+Decisions:
+Assumptions:
+Evidence:
+Failure paths:
+Operator-comprehension notes:
+Open questions:
+```
 
-## UFSD Lifecycle
+## Size Discipline
 
-1. **Discovery** creates the UFSD file — writes first Summary + Detail block
-2. **Council** reads Summary, writes updated Summary + Detail
-3. **Planning** reads Summary, writes updated Summary + Detail
-4. **Building** reads Summary, writes updated Summary + Detail
-5. **Adversarial** reads Summary, writes updated Summary + Detail
-6. **Debugging** reads Summary (if invoked mid-pipeline), writes Detail
-
-## File Location
-
-UFSD lives at: `docs/ultraflow/ufsd/YYYY-MM-DD-<feature>-ufsd.md`
-One UFSD per feature. Deleted or archived after feature ships.
+Keep summary under 10 lines when possible. Move long audits to `docs/ultraflow/audits/` and link them.

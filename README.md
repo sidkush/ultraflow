@@ -1,200 +1,156 @@
 # UltraFlow
 
-Enhanced agentic skills framework for coding agents. Better brainstorming, smarter decisions, adversarial testing, TDD-enforced debugging with post-mortem journals — in ~55% fewer tokens than alternatives.
+AskDB-customized agentic workflow skills for high-rigor software work. UltraFlow keeps skills on, uses the `ultraflow:` namespace, and bakes in AskDB's trust-layer doctrine: value check, reachability, runtime probes, invocation-surface verification, TDD, two-stage review, adversarial pressure, and evidence-gated completion.
 
-## What's Different
+## What Changed In This Fork
 
-| Feature | Traditional | UltraFlow |
-|---------|------------|-----------|
-| Requirements gathering | Linear Q&A | **Progressive Discovery** — 5-stage funnel with option cards, counterfactuals, and assumption registry |
-| Decision making | Single perspective | **20-Persona Council** — all 20 decision intelligence personas dispatched every run, synthesized into theme clusters with evidence triangulation |
-| Implementation | Ad-hoc coding | **TDD-Enforced Building** — RED→GREEN→REFACTOR with inline code review, invariant preservation, and skill chain interrupts |
-| Debugging | "Try this fix" loops | **Session-Scoped TDD Fix Loop** — max 3 bugs/session, one at a time, proof-of-fix gates, blind skeptic verification, mandatory debug journals |
-| Security testing | Unit + integration | **Cross-cutting hunters + subsystem clusters** — 6 always-on failure-shape hunters (silent-wrong-answer, fail-open gates, tenant isolation, TOCTOU, payload-leak, determinism/dead-code-green) + 8 subsystem clusters fired by build surface + a frontend-coherence hunter, with CODE and SPEC/PLAN modes and fix-and-rebreak cycles |
-| Token usage | ~12,000-18,000 per workflow | **~5,500-8,000** per workflow (~55% savings) |
+- Operator-facing names now match the skills the operator types.
+- `building` was split into `test-driven-development` and `subagent-driven-development`.
+- `requesting-code-review` is a first-class skill.
+- `council` is v2 with mandatory reachability and frontend-wiring gates.
+- `adversarial-testing` keeps v3's six cross-cutting hunters, subsystem dispatch map, SPEC/PLAN mode, and frontend-coherence hunter.
+- `audit` adds the 4+1 read-only audit workflow.
+- UFSD is canonical at `docs/ultraflow/specs/`.
+- Git flow no longer auto-creates worktrees or branches.
+- Token claims are conservative; rigor is prioritized over the old savings target.
 
 ## Skills
 
-### Core Workflow (in order)
-1. **discovery** — Progressive requirement discovery in 5 stages: domain scan, option cards (with counterfactuals), deep dive, spec preview with assumption registry, confidence check with coverage scoring. Writes UFSD spec file.
-2. **council** — All 20 decision intelligence personas (Contrarian, Actuarian, Archaeologist, Synthesizer, Economist, Anthropologist, Regulator, Migrationist, Epidemiologist, Cognitive Load Auditor, Chronologist, Measurement Skeptic, Analogist, Scope Prosecutor, Debt Collector, Operator, Build/Buy Arbitrageur, Privacy Engineer, Falsificationist, Velocity Accountant) dispatched in parallel every run. Synthesized into 3-5 theme clusters with evidence triangulation, counterfactual gate, and assumption registry. Also has 10 specialist investigators (personas 21-30) for debugging/root cause analysis.
-3. **planning** — Implementation plans with 2-5 minute task granularity, exact file paths, test commands, invariant preservation, assumption registry, counterfactual gate, and MVP-proof. Self-reviewed by plan-reviewer subagent against failure mode map.
-4. **building** — TDD-enforced (RED→GREEN→REFACTOR per task) with invariant preservation checks after each GREEN. Inline code review via reviewer subagent. Implementer subagent for complex tasks. Skill chain interrupts (LOCAL/UPSTREAM/HALT) on failure.
-5. **adversarial-testing** — Two modes (**CODE** attacks implemented code; **SPEC/PLAN** attacks a design/plan before code). Every run fires **6 cross-cutting hunters** built around the failure shapes real products ship — silent-wrong-answer, silent-noop/fail-open gates, tenant/schema isolation, concurrency/TOCTOU, payload-leak, determinism+dead-code-green. A **dispatch map** then fires only the **subsystem clusters** the build touches (trust/audit, validator/auth, agent-loop/SQL, chart/marks, waterfall/twin/coverage, editor-state/dashboard, semantic-layer, frontend-render), plus a **frontend-coherence hunter** (always-on and amplified in SPEC mode). Gates: reachability tagging (DEAD-CODE caps at P3), read-only analysts, falsified-findings registry, non-halting per-round summaries, cross-file context for isolation/trust hunters. Anti-hallucination gate, evidence triangulation, severity×blast-radius priority matrix, fix-and-rebreak cycles.
-6. **verification** — Evidence-gated completion claims. Must run commands fresh, quote verbatim output (command + exit code + result + full output), scope creep guard. Bans "should", "probably", "I think".
-7. **git-flow** — Worktree creation (auto-detect deps, baseline test, gitignore check) + branch finishing (merge, push+PR, keep, or discard with confirmation).
+### Core Flow
 
-### Supporting Skills
-8. **debugging** — 5-phase systematic approach: observe (reproduce + assumptions), hypothesize (mechanism-level + counterfactual gate), test (prediction-first), TDD bug fix loop (RED confirmation → minimal fix → GREEN confirmation → regression check → proof-of-fix gate → blind skeptic), debug journal (mandatory post-mortem in `docs/ultraflow/debug-journals/`). Session-scoped: max 3 bugs, one at a time, sequential completion only. Loop detector escalates to council after 3 failed sessions.
-9. **parallel-dispatch** — Dispatches 2-5 focused agents simultaneously for independent tasks. Conflict detection, confidence-based re-dispatch, and integrated test verification.
-10. **receiving-review** — Technical verification of code review feedback before implementing. Bans performative agreement. Each suggestion gets AGREE+IMPLEMENT, AGREE+DEFER, PUSHBACK (with counter-evidence), or CLARIFY. YAGNI check on additions.
-11. **using-ultraflow** — Bootstrap and skill router. Establishes instruction priority, mandatory intent echo, anti-drift protocol (re-read skills every 5 tasks), and token budget awareness. Enforces rigid/flexible skill types.
+1. **using-ultraflow** - conversation spine, model routing, reasoning-effort header, value check, skill routing, and AskDB doctrine.
+2. **brainstorming** - entry point, happy path, failure-state UX, acceptance criteria, and out-of-scope before planning.
+3. **council** - council v2 decision review with Gate A Reachability/Proof-of-Life and Gate B Frontend-Wiring/Coherence.
+4. **writing-plans** - implementation plans with runtime probe, invocation-surface check, operator-flow acceptance, rollback/risk, and comprehension gates.
+5. **test-driven-development** - RED/GREEN/REFACTOR, AskDB preflight, trust-layer branch, and no live LLM/API tests.
+6. **subagent-driven-development** - plan execution with fresh implementers and mandatory spec-compliance review before code-quality review.
+7. **requesting-code-review** - reviewer dispatch template with Critical/Important/Minor triage.
+8. **adversarial-testing** - v3 defensive pressure in CODE, SPEC/PLAN, or TRUST mode, sharing council's two gates.
+9. **verification-before-completion** - evidence before completion claims, with UI smoke boundary.
+10. **finishing-a-development-branch** - branch-in-place finish flow; merge, push/PR, keep, or discard.
+
+### Supporting
+
+- **systematic-debugging** - root-cause-first debugging with reachability, runtime probe, invocation-surface checks, TDD bug fix, skeptic, and journal.
+- **dispatching-parallel-agents** - focused parallel agents for independent tasks and audit areas.
+- **receiving-review** - verifies review feedback before implementing it.
+- **audit** - 4+1 read-only audit every 4-5 commits or before risky continuation.
 
 ## Workflow
 
-```
-User request
-    |
-    v
-[discovery] — 5 stages: domain scan → option cards → deep dive → spec → confidence
-    |          Writes UFSD spec with scope baseline + assumption registry
-    v
-[council] — 20 personas propose solutions in parallel
-    |         Synthesized into 3-5 theme clusters with evidence triangulation
-    v
-[planning] — Precise task breakdown with invariant preservation
-    |          Self-reviewed by plan-reviewer subagent
-    v
-[building] — TDD cycle per task (RED → GREEN → REFACTOR)
-    |          Inline code review + invariant checks after each task
-    v
-[adversarial-testing] — 6 cross-cutting hunters + build-relevant clusters attack
-    |                     (CODE or SPEC mode); fix-and-rebreak, priority triage
-    v
-[verification] — Fresh evidence of success (verbatim output required)
-    |
-    v
-[git-flow] — Merge, PR, or keep
+```text
+using-ultraflow
+  -> brainstorming
+  -> council
+  -> writing-plans
+  -> test-driven-development / subagent-driven-development
+  -> adversarial-testing
+  -> verification-before-completion
+  -> finishing-a-development-branch
 
 Supporting:
-  [debugging]          — invoked on any bug/failure (session-scoped TDD fix loop)
-  [parallel-dispatch]  — invoked for independent tasks within building
-  [receiving-review]   — invoked when receiving PR/code review feedback
-  [using-ultraflow]    — bootstrap at conversation start
+  systematic-debugging
+  dispatching-parallel-agents
+  requesting-code-review
+  receiving-review
+  audit
 ```
 
-## Token Efficiency
+UI/UX work routes through taste, impeccable, ui-ux-pro-max, or frontend-design first, then returns to UltraFlow for planning, execution, review, and verification gates.
 
-UltraFlow is designed for **minimum token consumption**:
+## Derived Rename Mapping
 
-- **11 skills** covering the full development lifecycle
-- **Lazy-loaded** supporting files (personas, breaker profiles, subagent prompts loaded on-demand only)
-- **Code intent** in plans, not full code blocks (~50% savings)
-- **Compressed subagent prompts** (<50 lines each, explicit word limits on responses)
-- **Token budget metadata** in each skill so the agent can make cost-aware decisions
+| Previous UltraFlow skill | New operator-facing skill |
+|---|---|
+| discovery | brainstorming |
+| planning | writing-plans |
+| building | test-driven-development + subagent-driven-development |
+| debugging | systematic-debugging |
+| verification | verification-before-completion |
+| git-flow | finishing-a-development-branch |
+| parallel-dispatch | dispatching-parallel-agents |
+| missing | requesting-code-review |
+| missing | audit |
 
-Full workflow: **~5,500-8,000 tokens** for skill content.
+## Council v2 Gates
 
-See `docs/token-budget.md` for detailed breakdown.
+**GATE A - Reachability/Proof-of-Life:** a persona names the live entry path by grep/trace to the targeted code; dead code, non-existent APIs, or unreachable inputs cannot be CONFIRMED.
+
+**GATE B - Frontend-Wiring/Coherence:** a persona names the frontend seam that consumes the backend change, confirms payload-shape match, and accounts for loading, error, empty, stale, and agent-editability states.
+
+Council and adversarial testing use identical gate wording.
+
+## Adversarial v3
+
+Every run dispatches six cross-cutting hunters: silent-wrong-answer, silent-noop/fail-open, tenant/schema isolation, concurrency/TOCTOU, payload leak, and determinism/dead-code-green. A dispatch map adds only the subsystem clusters the surface touches, plus frontend-coherence in UI CODE mode and always in SPEC/PLAN mode.
+
+## Cross-Skill State
+
+All skills read/write UFSD at:
+
+`docs/ultraflow/specs/UFSD-YYYY-MM-DD-<feature>.md`
+
+Do not reference legacy non-specs UFSD locations or filename conventions.
+
+Long audit outputs go to:
+
+`docs/ultraflow/audits/`
+
+Deferred bug tracking remains:
+
+`docs/superpowers/triage/deferred-bugs.md`
 
 ## Project Structure
 
-```
+```text
 ultraflow/
-├── package.json
-├── README.md
-├── LICENSE (MIT)
-├── .claude-plugin/
-│   ├── plugin.json
-│   └── marketplace.json
-├── hooks/
-│   ├── hooks.json
-│   └── session-start
-├── skills/
-│   ├── using-ultraflow/SKILL.md
-│   ├── discovery/SKILL.md
-│   ├── council/
-│   │   ├── SKILL.md
-│   │   └── personas.md          (20 decision + 10 specialist personas)
-│   ├── planning/
-│   │   ├── SKILL.md
-│   │   └── plan-reviewer.md
-│   ├── building/
-│   │   ├── SKILL.md
-│   │   ├── implementer.md
-│   │   └── reviewer.md
-│   ├── debugging/
-│   │   ├── SKILL.md
-│   │   ├── skeptic.md
-│   │   └── debug-journal-template.md
-│   ├── adversarial-testing/
-│   │   ├── SKILL.md
-│   │   └── breaker-personas.md  (6 hunters + 8 clusters + frontend-coherence)
-│   ├── verification/SKILL.md
-│   ├── git-flow/SKILL.md
-│   ├── parallel-dispatch/SKILL.md
-│   ├── receiving-review/SKILL.md
-│   └── ufsd-template.md
-└── docs/
-    └── token-budget.md
+  .claude-plugin/
+    plugin.json
+    marketplace.json
+  docs/
+    token-budget.md
+  hooks/
+    hooks.json
+    session-start
+  skills/
+    adversarial-testing/
+    audit/
+    brainstorming/
+    council/
+    dispatching-parallel-agents/
+    finishing-a-development-branch/
+    receiving-review/
+    requesting-code-review/
+    subagent-driven-development/
+    systematic-debugging/
+    test-driven-development/
+    using-ultraflow/
+    verification-before-completion/
+    writing-plans/
+    ufsd-template.md
 ```
-
-## Cross-Skill State: UFSD
-
-All skills read and write to a shared **UltraFlow State Document** (UFSD):
-- **Specs**: `docs/ultraflow/specs/UFSD-YYYY-MM-DD-<feature>.md`
-- **Plans**: `docs/ultraflow/plans/YYYY-MM-DD-<feature>.md`
-- **Debug Journals**: `docs/ultraflow/debug-journals/YYYY-MM-DD-<slug>.md`
-
-The UFSD carries scope baselines, assumptions, invariants, decisions, and risk items across the full workflow so downstream skills inherit context without re-reading upstream artifacts.
 
 ## Installation
 
-### Claude Code (Recommended)
-
 ```bash
-# Install as a plugin from GitHub
-claude install-plugin github:sidkush/ultraflow
-```
-
-### Manual Installation
-
-```bash
-# Clone the repo
 git clone https://github.com/sidkush/ultraflow.git
-
-# Navigate to it
 cd ultraflow
-
-# Install as Claude Code plugin (from the repo directory)
 claude plugin add .
 ```
 
-### Alternative: Copy to Skills Directory
+Manual skill copy:
 
 ```bash
-# Clone
-git clone https://github.com/sidkush/ultraflow.git
-
-# Copy skills to your Claude Code skills directory
 cp -r ultraflow/skills/* ~/.claude/skills/
-
-# Copy hooks
-cp ultraflow/hooks/hooks.json ~/.claude/hooks.json
-cp ultraflow/hooks/session-start ~/.claude/hooks/session-start
-chmod +x ~/.claude/hooks/session-start
 ```
 
-### Verify Installation
+## Token Discipline
 
-Start a new Claude Code session. You should see UltraFlow's bootstrap message. Try:
-
-```
-/discovery    # Start progressive requirement discovery
-/council      # Launch 20-persona decision council
-/building     # Begin TDD implementation
-/debugging    # Systematic bug fix with TDD loop
-```
-
-## Comparison with Superpowers
-
-| Aspect | Superpowers | UltraFlow |
-|--------|------------|-----------|
-| Brainstorming | Linear Q&A, one question at a time | 5-stage progressive discovery with option cards + counterfactuals |
-| Decision making | Single approach | Council of 20 personas → 3-5 theme clusters with evidence triangulation |
-| Debugging | "Try this fix" loops | Session-scoped TDD fix loop + proof gates + blind skeptic + debug journals |
-| Security testing | Manual test suite runs | 20 security analysts in 7 clusters with fix-rebreak cycles |
-| TDD | Separate skill (extra load) | Embedded in building skill + debugging skill |
-| Code review | Separate skill (extra load) | Inline in building skill + dedicated receiving-review skill |
-| Git worktrees + finishing | 2 separate skills | 1 merged git-flow skill |
-| Token cost | ~12K-18K per workflow | ~5.5K-8K per workflow |
+UltraFlow now optimizes for correctness first. Full workflows typically load more than the old savings claim when council v2, audit, adversarial v3, or trust-layer gates are active. See `docs/token-budget.md` for current estimates.
 
 ## Contributing
 
-1. Fork the repo
-2. Create a feature branch
-3. Follow UltraFlow's own workflow (use the skills!)
-4. Submit a PR
+Use UltraFlow's own workflow. Keep skills concise, evidence-bound, and resistant to rationalization.
 
 ## License
 

@@ -1,7 +1,7 @@
 {
   "name": "ultraflow",
-  "version": "2.0.0",
-  "description": "UltraFlow 2.0 — Agentic skills framework with 8 council-selected intelligence dimensions, UFSD cross-skill state propagation, and meta-cognitive failure mode maps. Zero hallucination, counterfactual gates, evidence triangulation, MVP-proof chains.",
+  "version": "2.1.0",
+  "description": "AskDB-customized agentic skills framework with skills-on routing, council v2, audit, TDD, review, verification, and trust-layer doctrine.",
   "type": "module",
   "main": "skills/using-ultraflow/SKILL.md",
   "keywords": [
@@ -9,15 +9,16 @@
     "skills",
     "agentic",
     "TDD",
-    "debugging",
-    "discovery",
+    "systematic-debugging",
+    "brainstorming",
     "adversarial-testing",
+    "audit",
     "multi-agent",
     "workflow",
     "UFSD",
     "council",
-    "zero-hallucination",
-    "best-practices"
+    "trust-layer",
+    "askdb"
   ],
   "author": "UltraFlow Contributors",
   "license": "MIT",

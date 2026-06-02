@@ -5,14 +5,14 @@
     "email": ""
   },
   "metadata": {
-    "description": "UltraFlow 2.0 — 8 council-selected intelligence dimensions with cross-skill state propagation (UFSD). Zero hallucination, counterfactual gates, evidence triangulation, MVP-proof chains, invariant preservation, assumption registries, skill chain interrupts, and blind spot coverage. All in ~40% fewer tokens than alternatives."
+    "description": "UltraFlow 2.1 - AskDB-customized agentic workflow skills with skills-on routing, council v2 reachability/frontend gates, 4+1 audit, TDD, two-stage review, adversarial testing, and evidence-gated completion."
   },
   "plugins": [
     {
       "name": "ultraflow",
       "source": "./",
-      "description": "Agentic skills framework with 8 intelligence dimensions, UFSD state propagation, and meta-cognitive failure mode maps. Council-verified precision with minimum tokens.",
-      "version": "2.0.0",
+      "description": "AskDB-customized agentic workflow skills with council v2, audit, TDD, review, verification, and trust-layer doctrine.",
+      "version": "2.1.0",
       "author": {
         "name": "sidkush"
       },
@@ -20,7 +20,18 @@
       "repository": "https://github.com/sidkush/ultraflow",
       "license": "MIT",
       "category": "workflow",
-      "tags": ["skills", "TDD", "debugging", "discovery", "adversarial-testing", "multi-agent", "UFSD", "council", "zero-hallucination"]
+      "tags": [
+        "skills",
+        "TDD",
+        "systematic-debugging",
+        "brainstorming",
+        "adversarial-testing",
+        "audit",
+        "multi-agent",
+        "UFSD",
+        "council",
+        "trust-layer"
+      ]
     }
   ]
 }

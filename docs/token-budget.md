@@ -1,39 +1,40 @@
 # Token Budget Reference
 
+UltraFlow prioritizes rigor over minimum token count. The old blanket savings claim is retired.
+
 ## Per-Skill Load Cost
 
-| Skill | SKILL.md Lines | Est. Tokens | Supporting Files |
-|-------|---------------|-------------|-----------------|
-| using-ultraflow | ~65 | ~300 | none |
-| discovery | ~110 | ~800 | none |
-| council | ~95 | ~300 | personas.md (~400 on-demand) |
-| planning | ~85 | ~600 | plan-reviewer.md (~200 on-demand) |
-| building | ~105 | ~700 | implementer.md (~150), reviewer.md (~100) on-demand |
-| debugging | ~95 | ~500 | none |
-| adversarial-testing | ~170 | ~650 | breaker-personas.md (~900 on-demand) |
-| verification | ~70 | ~300 | none |
-| git-flow | ~95 | ~400 | none |
-| parallel-dispatch | ~70 | ~300 | none |
+| Skill | Est. tokens | Supporting files |
+|---|---:|---|
+| using-ultraflow | 1,400 | none |
+| brainstorming | 900 | none |
+| council | 1,300 | personas.md (~900) |
+| writing-plans | 1,000 | plan-reviewer.md (~500) |
+| test-driven-development | 900 | none |
+| subagent-driven-development | 1,000 | implementer/spec/code-review prompts (~900) |
+| requesting-code-review | 500 | code-reviewer.md (~500) |
+| systematic-debugging | 1,300 | skeptic + journal template (~700) |
+| adversarial-testing | 1,300 | breaker-personas.md (~1,800) |
+| dispatching-parallel-agents | 600 | none |
+| audit | 700 | none |
+| verification-before-completion | 600 | none |
+| finishing-a-development-branch | 500 | none |
+| receiving-review | 500 | none |
 
-## Full Workflow Estimate
+## Workflow Estimates
 
-| Phase | Tokens |
-|-------|--------|
-| Bootstrap (using-ultraflow) | 300 |
-| Discovery (5 stages) | 800 + ~200/question |
-| Council (5 personas) | 300 + 1500 + 500 synthesis |
-| Planning + review | 600 + 200 + 200 |
-| Building (per task) | 700 + 300 implementer + 100 reviewer |
-| Adversarial (6 hunters + relevant clusters) | 650 + 900 |
-| Verification | 300 |
-| Git-flow | 400 |
-| **Full workflow total** | **~5,500 - 8,000** |
+| Flow | Estimate |
+|---|---:|
+| Feature/UI, planned and executed | 5,000-8,000 tokens |
+| Trust-layer plan + execution gates | 8,000-14,000 tokens |
+| Council v2 with personas | 3,000-5,000 tokens |
+| Adversarial CODE/SPEC mode with v3 hunters | 4,500-8,000 tokens |
+| Adversarial TRUST mode | 5,000-8,500 tokens |
+| 4+1 audit | 3,500-6,000 tokens |
 
-## Comparison with Superpowers
+## Discipline
 
-| Metric | Superpowers | UltraFlow | Savings |
-|--------|------------|-----------|---------|
-| Number of skills | 13 | 10 | 23% |
-| Avg lines per SKILL.md | ~300 | ~90 | 70% |
-| Full workflow tokens | ~12,000-18,000 | ~5,500-8,000 | ~55% |
-| Supporting files loaded | always with skill | on-demand only | variable |
+- Load supporting files only when the skill invokes them.
+- Write long audits to `docs/ultraflow/audits/` and return path plus <=5-line summary.
+- Focused tests inside folds; full floor once at the end.
+- Token budget never justifies skipping TDD, reachability, review, or verification gates.

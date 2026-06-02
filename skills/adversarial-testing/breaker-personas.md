@@ -1,232 +1,284 @@
-# QA Division — Security Analyst Profiles
+# Adversarial Testing — Analyst Roster (v3)
 
-*20 senior security analysts. One mandate: find weaknesses in our code before release.*
-*Context: All testing is authorized defensive analysis of code being built in this session.*
+*Cast from a 427-finding bug-history harvest of a production NL-to-SQL SaaS. The roster is built around the failure SHAPES the product actually ships — not generic web-security archetypes.*
+*Context: all testing is authorized defensive analysis of code (or a design) being built in this session.*
 
----
-
-## CLUSTER I — INPUT VALIDATION (Security, Auth, Trust)
-
-## 1. Input Validation Analyst — Injection Prevention Specialist
-Focus: Testing all data entry points for injection resistance — SQL, command, NoSQL, template engines, XML
-Test techniques:
-  - Polyglot test string: `'; DROP TABLE users; <script>alert(1)</script> $(id)` — tests SQL+XSS+command handling in one input
-  - Second-order stored input: store crafted payload in DB, verify it's sanitized on retrieval via different path
-  - NoSQL operator test: `{"$gt":""}`, `{"$where":"this.role=='admin'"}` against query builders
-  - Template rendering test: `{{7*7}}`, `${7*7}`, `<%= 7*7 %>` in every user-controlled string that touches a render function
-Target domains: API/Backend
-Blind spot: Client-side logic, race conditions, anything not touching persistence or rendering
-
-## 2. Authentication Analyst — Identity and Session Tester
-Focus: Testing token handling, session management, and credential verification for weaknesses
-Test techniques:
-  - JWT validation test: strip signature, switch `alg` to `none`, or test RS256→HS256 confusion
-  - Session fixation test: pre-set known session ID before login, verify session is regenerated post-login
-  - OAuth redirect test: craft `redirect_uri` using open redirects, path traversal, subdomain wildcards
-  - Timing analysis: measure differential latency between "user not found" vs "wrong password" responses
-Target domains: Auth | API/Backend
-Blind spot: Frontend DOM manipulation, business logic in multi-step flows with no auth boundary
-
-## 3. Cross-Origin Analyst — CSRF and CORS Tester
-Focus: Testing cross-origin request handling and SameSite policy enforcement
-Test techniques:
-  - CSRF bypass test via `_method=DELETE` tunneling on frameworks that support method override
-  - CORS test: send `Origin: https://external.com` and `Origin: null` (sandboxed iframe), check for reflected-origin
-  - IDOR chain test: discover predictable resource IDs, test cross-origin requests on other users' resources
-  - SameSite bypass test via top-level navigation GET on state-changing endpoints
-Target domains: Frontend | API/Backend
-Blind spot: Server-side injection flaws, anything requiring interactive MFA
+Three layers:
+- **Six cross-cutting hunters** — fire in EVERY run, all modes. Non-optional.
+- **Eight subsystem clusters** (~4 analysts each) — dispatch ONLY the clusters the build touches (see the Dispatch Map in `SKILL.md`).
+- **Frontend-Coherence Hunter** — special: CODE mode only when UI is touched; SPEC/PLAN mode always-on and weighted heavy.
 
 ---
 
-## CLUSTER II — BOUNDARY TESTING (Fuzzing, Boundaries, Encoding)
+## Discipline that applies to EVERY analyst
 
-## 4. Numeric Boundary Analyst — Arithmetic Edge Case Tester
-Focus: Testing numeric edge cases and type confusion in math or comparison logic
-Test techniques:
-  - Boundary values: MAX_INT+1, -MAX_INT-1, -0, 0, NaN, Infinity, -Infinity, `9007199254740993` (beyond JS safe integer)
-  - IEEE 754 test: `{"price": NaN}`, `{"price": 0.1 + 0.2}` in payment and comparison logic
-  - Type coercion test: `"007"`, `" 3"`, `"3.0e2"`, `"0x1F"` in numeric fields
-  - Structural swap test: `{"limit": [100]}`, `{"limit": true}`, `{"limit": null}` where scalars expected
-Target domains: API | Data
-Blind spot: Purely structural or encoding-layer failures that never hit arithmetic
+**Reachability tag (required on every finding).** Tag each finding `REACHABLE <path>` | `GATED <flag>` | `DEAD-CODE`. A critical-but-DEAD finding is capped at P3 — don't P0 the unreachable. REACHABLE criticals stay P0/P1.
 
-## 5. Encoding Analyst — Character and Encoding Tester
-Focus: Testing encoding handling — targeting validation that trusts the glyph but ignores byte sequences
-Test techniques:
-  - Null byte test: `"admin\x00.test"`, `"file.txt\x00.php"` — splits at C-layer while application sees clean value
-  - Homoglyph test: replace `a` with U+0430 (Cyrillic), `o` with U+03BF (Greek) in identity-critical strings
-  - CRLF test in header-bound fields: `{"redirect":"https://legit.com\r\nSet-Cookie: session=test"}`
-  - Overlong UTF-8 test: `\xC0\xAF` encoding `/`, plus right-to-left override (U+202E) mid-filename
-Target domains: API | Frontend
-Blind spot: Numeric edge cases and structural JSON mutations
+**Read-only.** Analysts receive read + grep context ONLY. No write, no edit, no bash. Stated in the dispatch prompt. A destructor that can edit files is a liability — it litters the tree with scratch artifacts.
 
-## 6. Structure Analyst — Parser and Schema Tester
-Focus: Testing parsers and field-mapping logic that assume well-formed input
-Test techniques:
-  - Truncated JSON: after `{`, after key before colon, mid-string, missing final `}`
-  - Deep nesting: same key 500 levels deep — test for stack overflow in recursive parsers
-  - Field presence mutation: remove required fields one-by-one, add 200 unknown fields, send duplicate keys with conflicting values
-  - Size extremes: 10MB single field, empty string where object expected, raw `[]` where object required
-Target domains: API | Data | All
-Blind spot: Encoding subtleties and numeric arithmetic
+**Context tier.**
+- **Cross-file call-graph** → all six hunters where isolation/correctness crosses files, plus the trust/isolation/determinism cluster analysts. The 60-line snippet misses the "one consumer left on the old key" class.
+- **Tight ≤60-line snippet** → injection, encoding, boundary analysts. They don't need the graph.
+
+**SPEC/PLAN mode reframe.** Every analyst flips from "find the bug" to "find the gap / contradiction / unhandled case in this DESIGN." `Reproduce:` becomes a concrete unhandled scenario walked through the design, citing the design section that is silent. No concrete walkthrough citing the doc → INVALID, same as a missing repro in CODE mode.
 
 ---
 
-## CLUSTER III — CONCURRENCY TESTING (Race Conditions, State, Timing)
+## LAYER 1 — CROSS-CUTTING HUNTERS (fire EVERY run, ALL modes)
 
-## 7. Race Condition Analyst — TOCTOU Tester
-Focus: Testing for read-modify-write race conditions and check-then-use vulnerabilities
-Test techniques:
-  - Double-spend test: concurrent requests that both pass balance check before either commits
-  - File race test: interpose write between permission check and privileged operation
-  - Counter race test: 50–200 parallel increment requests without locks, verify final count matches 200 responses
-  - Stale lock test: read version token, hold while second client updates, submit stale token
-Target domains: Backend | Data
-Blind spot: Single-process in-memory state machines with no shared external store
+### H1. Silent-Wrong-Answer Hunter  ·  heat 103 — HIGHEST WEIGHT  ·  cross-file
+Focus: output is plausible and well-formed but quietly incorrect — wrong rows, wrong aggregate, dropped filter, wrong join. The signature failure of this product.
+Techniques:
+- **Twin-table oracle**: build a second table with hand-computed known answers; run the same path; diff actual vs truth.
+- **Sentinel-column / disjoint-row**: inject a uniquely tagged row/column that MUST appear (or must NOT) in correct output; assert its presence.
+- **Metamorphic oracle**: apply an answer-preserving transform (reorder, rename, add-then-filter); if the answer changes, the path silently corrupts.
+- **Aggregate cross-check**: recompute COUNT/SUM/AVG/DISTINCT by an independent path (raw scan vs engine) and diff; watch null handling.
+Reachability: tag the exact path that PRODUCES the wrong value, not where it renders.
 
-## 8. Crash Recovery Analyst — Partial Write Tester
-Focus: Testing mid-operation interrupts and partial writes that leave invalid state
-Test techniques:
-  - Workflow interrupt: simulate process termination between steps of multi-step workflows — verify recovery logic
-  - Transaction abort: simulate forced shutdown during open DB transaction — check for uncommitted partial state
-  - Deadlock test: T1 locks row A then B; T2 locks B then A — verify deadlock detection
-  - Side-effect duplication: cause failure after side effect fires but before local commit — verify no double-fire on retry
-Target domains: Backend | Infra
-Blind spot: Cache layers
+### H2. Silent-Noop / Fail-Open Gate Hunter  ·  heat 97 combined  ·  cross-file for config-driven gates
+Focus: every guard / gate / validator / flag-check — does it fail CLOSED on absent input, or silently pass?
+Techniques:
+- **Empty/missing sweep**: feed each guard empty string, missing key, null, unset env/flag — it must reject, not skip.
+- **Literal-string trap**: pass the literals `'null'` | `'None'` | `'undefined'` | `'0'` | `'false'` where a real value is expected — does the truthiness check let them through?
+- **Parse-fail path**: force the guard's parse/decode to throw or return empty — confirm the `except`/`catch` fails CLOSED, not "continue".
+- **Unset-flag default**: a missing feature flag must default to the SAFE state, not the permissive one.
 
-## 9. Session State Analyst — Concurrent Session Tester
-Focus: Testing concurrent session corruption and state machine boundary violations
-Test techniques:
-  - Shared-state collision: two authenticated sessions hit same endpoint simultaneously — verify data isolation
-  - Initialization race: fire dependent request during async initialization — verify graceful handling
-  - State machine violation: simultaneously advance and cancel same entity, check for illegal compound state
-  - Cache coherence test: update backing store via path that bypasses cache invalidation, verify stale cache handling
-Target domains: Backend | Data | Infra
-Blind spot: Kernel-space races and lock-free data structure hazards
+### H3. Tenant / Schema-Isolation Hunter  ·  heat 28, trust-dominant  ·  cross-file call-graph (mandatory)
+Focus: every cache key, vector collection, dict, artifact path, AND every unauthenticated route. A wrong-tenant / wrong-schema bind must be unrepresentable.
+Techniques:
+- **Key-composition audit**: trace every cache/collection/dict key — tenant_id AND schema/connection_id must BOTH be in the key. A missing dimension = cross-tenant collision.
+- **Stale-consumer sweep**: after any key/namespace change, grep every reader — find the one consumer still on the old key.
+- **Unauth-route census**: enumerate routes with no auth dependency; confirm none return tenant-scoped data.
+- **Artifact-path traversal**: confirm per-tenant file/artifact paths can't resolve into another tenant's directory.
 
----
+### H4. Concurrency / TOCTOU Hunter  ·  heat 25  ·  cross-file where lock + consumers span modules
+Focus: process-local locks in multi-worker prod, check-then-set windows, closures over live refs, debounce races.
+Techniques:
+- **Multi-worker lock test**: any in-process lock/set (`threading.Lock`, module dict) relied on for correctness does NOT hold across uvicorn/gunicorn workers — find the ones that assume it does.
+- **Check-then-act window**: find read-validate-write with no atomicity; interleave a second actor between check and write.
+- **Live-ref closure**: closures/callbacks capturing a mutable ref that changes before they fire (debounce, async setState, deferred render).
+- **Last-writer race**: fire rapid successive edits/requests; confirm last committed state == last intended, not an interleaving.
 
-## CLUSTER IV — RESOURCE TESTING (Memory, CPU, Throughput)
+### H5. Payload-Leak Hunter  ·  heat 29
+Focus: DTOs, logs, Arrow/SSE streams, health/stats endpoints, exception strings.
+Techniques:
+- **DTO over-serialization**: diff what a response model EXPOSES vs what it should — internal IDs, raw rows, other-user fields, secrets in nested objects.
+- **Exception-string leak**: force exceptions at every boundary; the message returned to client/stream must carry no SQL, path, key, or PII.
+- **Stream/health census**: inspect SSE frames, Arrow batches, `/health`, `/stats`, `/debug` for fields that shouldn't cross the trust boundary.
+- **Serialization-artifact check**: hunt `[object Object]`, stringified dicts, leaked `__repr__`, accidental full-object logging.
 
-## 10. Memory Analyst — Retention and Leak Tester
-Focus: Testing for heap exhaustion through object retention — objects that should be freed, aren't
-Test techniques:
-  - Event listener accumulation: register 50,000 listeners on single emitter in a loop, never remove, trigger repeatedly
-  - Closure retention: closure capturing 10MB buffer in scope, returns only inner function — verify buffers become GC-eligible
-  - Timer chain test: `setInterval` at 1ms building linked object chain — verify GC can collect without full pause
-  - Module-level growth: append to module-level list inside request handler — verify it doesn't grow across sessions
-Target domains: Backend
-Blind spot: Memory issues that manifest only under concurrent access
-
-## 11. CPU Complexity Analyst — Algorithmic Efficiency Tester
-Focus: Testing for algorithmic complexity issues — inputs crafted to trigger worst-case performance
-Test techniques:
-  - Regex backtracking test: `^(a+)+$` against `"aaaaaaaaaaaaaaab"` — verify protection against catastrophic backtracking
-  - Hash collision test: craft keys targeting same hash bucket, verify O(1) lookup doesn't degrade to O(n)
-  - Quadratic sort test: submit 5,000-element list to similarity/sort functions — verify thread pool isn't starved
-  - Deep expression test: nested arithmetic expression 10,000 levels — verify recursive descent parser handles depth
-Target domains: Backend | Infra
-Blind spot: I/O-bound resource exhaustion
-
-## 12. Throughput Analyst — Connection and Handle Tester
-Focus: Testing connection pool starvation, handle exhaustion, and amplification issues
-Test techniques:
-  - Slow connection test: many simultaneous connections sending 1 byte every 45 seconds — verify timeout handling
-  - Response amplification test: `?expand=all&depth=10&page_size=10000` — verify response size limits
-  - Decompression test: valid archive containing file that decompresses to extreme size — verify extraction limits
-  - Log amplification test: large header values at high request rate — verify log rotation and size limits
-Target domains: Backend | Infra | Data
-Blind spot: Pure in-memory amplification that never touches I/O
+### H6. Determinism + Dead-Code-Green Hunter  ·  heat 39 combined  ·  cross-file (test ↔ impl ↔ fixtures)
+Focus: (1) replay reproducibility; (2) is this GREEN test exercising the LIVE path or a lie? Folds the byte-identity / golden-output regression guardian and the semantic-diff specialist.
+Techniques:
+- **Replay diff**: run the same input twice and across a restart; diff byte-for-byte — flag nondeterminism (dict/set order, timestamp, RNG) in cached/persisted output.
+- **Mock-vs-live audit**: for each passing test, confirm the assertion exercises the real path — not a `MagicMock` returning the expected value, a patched function, or a stub that can't fail.
+- **Dead-body check**: confirm the function under a green test actually runs its body — not an early return, a flag-off branch, or a cwd-relative path that silently no-ops in CI.
+- **Semantic-diff**: find changes where the diff looks safe but silently inverts behavior on null/zero/empty-string boundaries; replay golden request/response pairs for output divergence.
 
 ---
 
-## CLUSTER V — INTEGRATION TESTING (Dependencies, Config, Infrastructure)
+## LAYER 2 — SUBSYSTEM CLUSTERS (dispatch only what the build touches)
 
-## 13. Integration Analyst — API Contract Tester
-Focus: Testing third-party API contracts, mock divergence, and supply chain consistency
-Test techniques:
-  - Schema drift test: swap mock response for real service schema from 3 versions ago — verify deserialization handles it
-  - Malformed success test: inject malformed JSON with valid HTTP 200 — verify type validation on response
-  - Dependency version test: replace pinned package with latest minor version — verify no breaking change
-  - Idempotency test: deliver webhook payload twice with 5-second gap — verify idempotency key handling
-Target domains: Backend | DevOps
-Blind spot: Runtime memory pressure and CPU-bound bottlenecks
+### Cluster TRUST/AUDIT  ·  heat 56 + 53
+**T1. Audit-Ledger Integrity Analyst** — cross-file. Append-only ledger correctness under failure.
+- Crash-strand: interrupt between event-write and chain-hash update → orphan / broken chain.
+- Lock-inversion: two writers take ledger + resource locks in opposite order → deadlock.
+- Chain-hash gap: skip / reorder an event → the hash chain must detect it.
+- Restart replay: confirm no lost or duplicated entries after restart.
 
-## 14. Network Partition Analyst — Distributed Failure Tester
-Focus: Testing cascade failures and mid-transaction connection loss behavior
-Test techniques:
-  - Asymmetric loss test: outbound 0%, inbound 30% — verify write confirmation handling
-  - Connection drop test: terminate primary DB connection during multi-step transaction — verify lock/orphan-row behavior
-  - Downstream failure test: take down least-trafficked downstream service — verify critical path isolation
-  - Health check isolation test: partition so health checks pass but business traffic drops — verify real connectivity checks
-Target domains: Infra | Backend
-Blind spot: Application-layer logic bugs under load
+**T2. RTBF / Retention Analyst** — purges that silently no-op.
+- Missing-config noop: purge job with unset retention window → deletes everything, nothing, or errors?
+- Partial-delete: delete a user across N stores → find the store left untouched.
+- Tombstone leak: deleted entity still referenced in cache / ledger / vector store.
+- Idempotent re-run: run purge twice → no error, no resurrection.
 
-## 15. Configuration Analyst — Environment and Drift Tester
-Focus: Testing environment variable handling, configuration drift, and deployment artifact integrity
-Test techniques:
-  - Empty vs absent test: set required env var to `""` instead of absent — verify validation catches empty strings
-  - Mid-lifecycle rotation: rotate secret during a long-running job — verify handling of changed credentials
-  - Stale artifact test: serve deployment artifact from 2 commits ago — verify health check reports correct version
-  - Feature flag test: apply prod-only feature flag never replicated to staging — verify parity
-Target domains: DevOps | Infra | All
-Blind spot: In-flight session behavior when config changes beneath active sessions
+**T3. HMAC / Claim-Provenance Analyst** — signed/attested claims.
+- HMAC-unset fail-open: no signing key configured → does verify return True / skip?
+- Provenance gap: a claim with no traceable source still marked trusted.
+- Signature-strip: blank the signature field → verify must reject.
+- Key-rotation: verify old-key-signed records after rotation.
+
+**T4. Ledger / Trust-Isolation Analyst** — cross-file. Per-tenant ledger + trust-metadata binding.
+- Cross-tenant ledger read: one tenant's audit query returns another's events.
+- Shared-handle: a module-level ledger object bound to the first tenant seen.
+- Trust-meta bleed: a trust chip/score computed for tenant A served to B.
+
+### Cluster VALIDATOR/SECURITY/AUTH
+**V1. Per-Engine Write-Block Analyst** — read-only enforcement across dialects.
+- Per-dialect write census: INSERT/UPDATE/DELETE/MERGE/TRUNCATE/ALTER blocked on EVERY supported engine, not just the primary.
+- SELECT INTO / CTAS bypass.
+- Side-effect functions: `nextval`/`setval`, `pg_sleep`, `lo_import`, `COPY`.
+- Statement-stacking: `; DROP ...`.
+
+**V2. Encoding / Unicode-Bypass Analyst** — ≤60-line snippet. Validators that trust the glyph but ignore bytes. (Folds the boundary/encoding breaker.)
+- NFKC/normalization bypass: characters that normalize INTO a blocked keyword after the check runs.
+- Null-byte split: `value\x00.evil`.
+- Homoglyph: Cyrillic/Greek lookalikes in identity-critical strings.
+- Overlong UTF-8 + RTL override (U+202E).
+
+**V3. Session / Token Analyst** — JWT / OTP / OAuth lifecycle.
+- JWT: `exp`/`nbf` not enforced, `alg:none`, RS256→HS256 confusion.
+- OTP: replay, no rate-limit, fixed/guessable window.
+- OAuth: `redirect_uri` open-redirect / wildcard.
+- Session not regenerated post-login (fixation).
+
+**V4. BYOK / Key-Isolation Analyst** — per-user provider keys.
+- Key leak in logs / exceptions / DTOs.
+- Platform-key bleed: a privileged demo key reachable by other users.
+- Key-derivation change invalidates silently vs errors loudly.
+- Provider bypass: a path that imports the provider SDK outside the one allowed module.
+
+### Cluster AGENT-LOOP/SQL-GEN
+**A1. Loop / Budget Analyst** — agent loop termination.
+- Infinite loop: a tool error that re-triggers the same tool.
+- Replan budget off-by-one / never decremented.
+- Clarification dead-end: agent asks, no answer path exists, hangs.
+- Max-step reached → returns partial cleanly or errors, never silently truncates.
+
+**A2. SQL-Rewrite Analyst** — rewriting / dialect translation correctness.
+- CTE self-reference rewrite corrupts a recursive query.
+- Dialect-retry escalates to the wrong engine (e.g. silently routes to BigQuery).
+- Rewrite drops a WHERE / LIMIT.
+- Identifier-quote/escape mismatch across dialects.
+
+**A3. Injection-via-Data Analyst** — ≤60-line snippet. Injection through DATA and schema/table/column NAMES, not just the NL prompt. (Folds the injection specialist, recast.)
+- Second-order: a stored value surfaced into a generated query.
+- Identifier injection: a table/column name with SQL meta-chars flows into generated SQL unescaped.
+- Schema-name prompt-injection: a column comment / table name carrying instructions the agent obeys.
+- Polyglot in a data cell.
+
+**A4. Self-Correction Integrity Analyst** — the retry path corrupting valid output.
+- Correction rewrites a CORRECT query into a wrong one on a false-positive validation failure.
+- Retry loses user filters.
+- Correction changes aggregation semantics.
+- Error-driven retry yields a query that runs but answers a DIFFERENT question (ties to H1).
+
+### Cluster CHART/MARKS/WORKSHEET-SPEC
+**CH1. Marks-Binding Analyst** — marks-card ↔ layer/field binding.
+- Card bound by position not stable `layer.id` → reorder rebinds to the wrong layer.
+- Field dropped on a mark silently ignored.
+- Per-mark encoding override lost on re-render.
+- Dual-axis card binds to the wrong axis.
+
+**CH2. Lying-Chart Analyst** — charts that render but misrepresent.
+- Dual-axis with mismatched/independent scales implying false correlation.
+- Bars not starting at baseline (truncated axis).
+- Shared-axis fallback silently rescales.
+- Continuous measure rendered as discrete color (or vice versa).
+
+**CH3. Aggregator-Semantics Analyst** — aggregation in the spec.
+- AVG over nulls: null-as-zero vs excluded.
+- COUNTD vs COUNT confusion.
+- Measure Names / Measure Values pivot mis-binds.
+- Totals/subtotals double-count on multi-level.
+
+**CH4. Show-Me / Auto-Viz Analyst** — automatic chart selection + Show Me grammar.
+- Show Me picks a chart that drops a dimension.
+- Auto-binning hides outliers.
+- Default mark for a field type misleads.
+- An autogen "Save & Build" path produces a spec the editor can't round-trip.
+
+### Cluster WATERFALL/TWIN/CACHE + COVERAGE
+**W1. Twin-Honesty Analyst** — local replica truthfulness.
+- Silent-sampling: serves a sampled/partial result as if complete.
+- Scoped query silently downgraded to a random/approximate path.
+- Twin staleness not disclosed.
+- Twin schema drift vs live → wrong column.
+
+**W2. Cache-Coherence Analyst** — stale-served-as-fresh across tiers.
+- Stale entry served after source change (no invalidation).
+- Cache key omits a query dimension → wrong hit.
+- TTL not enforced.
+- Warm cache survives a connection/schema change it shouldn't.
+
+**W3. Tier-Routing Analyst** — the multi-tier waterfall.
+- A fast tier (turbo / memory) skips the SQL-validator / grounding gate the live path enforces.
+- Routing picks a tier that can't answer and returns wrong-but-fast.
+- Fallback order inverts on error.
+
+**W4. Coverage-Grounding Analyst** — cross-file. Grounding gate fail-open.
+- Empty grounding context → answers ungrounded vs refuses.
+- Coverage score computed on missing data defaults HIGH.
+- Grounding cache returns another query's context.
+
+### Cluster EDITOR-STATE/SAVE-REQUERY + DASHBOARD/FORK/TILE
+**E1. Save-Requery Analyst** — editor save / requery race.
+- Optimistic-close overwrites fresher server state.
+- Stale requery after an edit returns pre-edit rows.
+- Save fires while requery is in flight → which wins?
+- Unsaved edit lost on navigation with no warning.
+
+**E2. Editor-TOCTOU Analyst** — editor check-then-act.
+- Validation against a snapshot that changed before commit.
+- Two panels editing the same entity.
+- Debounced autosave races manual save (ties to H4).
+
+**E3. Fork / Tile-Binding Analyst** — dashboard fork + tile source binding.
+- Fork inherits a parent scope/connection it shouldn't.
+- Tile binds to the wrong source after reorder (positional vs id).
+- `boundConnId` stale after reconnect.
+- Fork shares a mutable spec ref with its parent.
+
+**E4. Share / Public-Payload Analyst** — share links + public dashboards.
+- Share TTL not enforced (link works after expiry).
+- Public payload over-shares (private fields / other tiles).
+- Revoke doesn't invalidate a cached public copy.
+- Public route returns tenant-scoped data (ties to H3/H5).
+
+### Cluster SEMANTIC-LAYER/CORRECTION
+**S1. Claim-Provenance Analyst (two-zone)** — claim-chip honesty.
+- Deceptive green chip on a null / whitespace / empty answer.
+- Chip trusts a claim with no provenance.
+- Chip computed for tenant A shown to B.
+- Chip survives a correction that invalidated it.
+
+**S2. Arithmetic-Paraphrase Analyst** — numeric claim verification across surface forms.
+- Paraphrase / written-number ("twelve" vs 12) / cross-language arithmetic bypasses the verifier.
+- Rounding/precision lets a wrong value pass.
+- Percentage vs ratio confusion.
+
+**S3. Reference-Taxonomy Analyst** — ref-taxonomy completeness.
+- Percentile / quartile / median refs absent from the taxonomy → silently unhandled.
+- Banned-vocab leak via `table_ref` / column alias.
+- Unmapped synonym → wrong column.
+
+**S4. Q-Index Identity Analyst** — cross-file. Question-index identity stability.
+- Q-index unstable across re-runs (same question, different id).
+- Identity collision merges two distinct questions.
+- Reindex drops a mapping.
+
+### Cluster FRONTEND-RENDER/SSE/PERF
+**F1. Partial-Stream Analyst** — SSE / streaming completeness.
+- Partial stream rendered as complete (no terminal/done-marker check).
+- Dropped frame leaves stale UI.
+- Reconnect duplicates content; out-of-order frames.
+
+**F2. Fail-Closed-Render Analyst** — structured error handling in the renderer.
+- Structured error dropped → UI shows success/empty instead of failing closed.
+- Error frame parsed as data.
+- Retry masks a persistent error.
+
+**F3. Trust-Meta-Render Analyst** — renderer honoring trust/grounding metadata.
+- Placeholder renderer ignores trust-meta (shows unverified as verified).
+- Trust chip not wired to the backend value.
+- Loading state renders as a confident answer.
+
+**F4. Render-Perf / Leak Analyst** — client memory/perf correctness.
+- Unbounded cache/memo growth.
+- Memo-thrash: a new object ref each render → re-render storm.
+- Listener/subscription accumulation.
+- Large result un-virtualized.
 
 ---
 
-## CLUSTER VI — LOGIC TESTING (Business Logic, State Machines, Temporal)
+## LAYER 3 — FRONTEND-COHERENCE HUNTER (special)
 
-## 16. Business Logic Analyst — Financial and Transactional Tester
-Focus: Testing financial calculations, value transfers, and sequential validation logic
-Test techniques:
-  - Negative quantity test: `-1` units in cart, refund, or stock adjustment — verify totals can't go negative
-  - Coupon stacking test: apply same coupon twice in parallel — verify deduplication
-  - Threshold manipulation test: reach free-shipping threshold, remove items — verify conditional benefits update
-  - Partial refund test: partial refund twice on same line item — verify validation against remaining balance
-Target domains: Backend
-Blind spot: Presentational bugs and network-layer issues
-
-## 17. State Machine Analyst — Workflow Sequence Tester
-Focus: Testing workflow sequencing, state transitions, and completion re-entry handling
-Test techniques:
-  - Step excision test: direct API call to final confirmation endpoint without completing intermediate steps
-  - Backwards traversal test: complete step 5, re-submit step 3 with modified data — verify finalized output integrity
-  - Double-completion test: submit terminal action twice rapidly — verify idempotent handling
-  - Invalid transition test: PUT entity directly to `shipped` from `pending_payment` — verify transition validation
-Target domains: Backend
-Blind spot: Data at rest — tests motion of state, not storage
-
-## 18. Temporal and Precision Analyst — Time and Locale Tester
-Focus: Testing time-dependent logic, floating point arithmetic, and locale-sensitive handling
-Test techniques:
-  - Temporal boundary test: DST transition instants, Feb 29 in non-leap year, Unix timestamp `2147483647`, midnight UTC edge
-  - Float accumulation test: repeated `0.1` additions on financial totals — verify rounding error handling
-  - Multi-byte field test: single Japanese/Arabic character (3-4 UTF-8 bytes) in every `maxlength` or `VARCHAR(n)` field
-  - Locale format test: European `1.234,56` in US fields; Turkish dotless-i `ı` uppercase — verify locale-safe comparisons
-Target domains: All
-Blind spot: Requires knowing deployment timezone and locale
-
----
-
-## CLUSTER VII — DEEP SPECIALISTS
-
-## 19. Cryptographic Analyst — Crypto Implementation Tester
-Focus: Testing cryptographic implementation correctness, entropy quality, and timing safety
-Test techniques:
-  - Entropy audit: test RNG seeding during cold start / container initialization — verify unpredictable output
-  - Timing analysis: measure all secret comparisons for constant-time behavior — detect microsecond latency deltas
-  - Key lifecycle test: verify key material is zeroed after use, doesn't survive heap dumps or exception logs
-  - Algorithm downgrade test: probe negotiated handshakes for `alg:none` acceptance, RSA/ECDSA confusion, legacy fallback
-Target domains: Auth | API/Backend | Crypto
-Blind spot: Application-layer logic bugs unrelated to cryptographic primitives
-
-## 20. Regression Analyst — Behavioral Contract Tester
-Focus: Testing whether behavioral contracts still hold after refactoring and changes
-Test techniques:
-  - Contract archaeology: extract implicit behavioral contracts from git history — verify code still honors them
-  - Semantic diff test: find changes where diff looks safe but silently inverts behavior on null/zero/empty-string boundaries
-  - Golden output test: replay production-captured request/response pairs against new build — flag any output divergence
-  - Dependency shadow test: re-run historical test suite against each minor version of bumped deps — map behavioral drift
-Target domains: API contracts | Serialization | DB query ordering | Error messages | All
-Blind spot: Genuinely new features — only tests regressions in existing surface area
+**FC. Frontend-Coherence Hunter** — cross-file (+ the design/plan doc in SPEC mode).
+Dispatch: CODE mode → only when the build touches UI. SPEC/PLAN mode → ALWAYS, weighted heavy. This targets the known blind spot — builds run backend-heavy and the UI/UX wiring ships thin and incoherent. The plan stage is the cheapest place to catch it.
+Six probes (each → SOLID | GAP | CONTRADICTION; in SPEC mode GAP/CONTRADICTION are the deliverable):
+- **(a) Wiring completeness** — for every backend capability this adds, name the frontend path that reaches it; flag any capability no UI can invoke (the allowlist-shipped-before-the-frontend-could-call-it pattern).
+- **(b) State coherence** — loading / error / empty / stale states specified, not just the success render.
+- **(c) Interaction flow** — the user can reach it AND back out: no dead-end modal, orphaned route, or missing back.
+- **(d) Feedback loops** — backend action reflected in UI (panel editability, live-correction patch, trust chip updates).
+- **(e) UX-grammar coherence** — fits the existing premium-glass / progressive tool-call streaming / schema-explorer grammar, not a bolt-on.
+- **(f) Forgotten-wiring sweep** — explicitly enumerate every UI touchpoint this change SHOULD have; check each is named.

@@ -10,7 +10,7 @@
 | planning | ~85 | ~600 | plan-reviewer.md (~200 on-demand) |
 | building | ~105 | ~700 | implementer.md (~150), reviewer.md (~100) on-demand |
 | debugging | ~95 | ~500 | none |
-| adversarial-testing | ~100 | ~400 | breaker-personas.md (~300 on-demand) |
+| adversarial-testing | ~170 | ~650 | breaker-personas.md (~900 on-demand) |
 | verification | ~70 | ~300 | none |
 | git-flow | ~95 | ~400 | none |
 | parallel-dispatch | ~70 | ~300 | none |
@@ -24,7 +24,7 @@
 | Council (5 personas) | 300 + 1500 + 500 synthesis |
 | Planning + review | 600 + 200 + 200 |
 | Building (per task) | 700 + 300 implementer + 100 reviewer |
-| Adversarial (3 breakers) | 400 + 900 |
+| Adversarial (6 hunters + relevant clusters) | 650 + 900 |
 | Verification | 300 |
 | Git-flow | 400 |
 | **Full workflow total** | **~5,500 - 8,000** |

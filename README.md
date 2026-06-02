@@ -10,7 +10,7 @@ Enhanced agentic skills framework for coding agents. Better brainstorming, smart
 | Decision making | Single perspective | **20-Persona Council** — all 20 decision intelligence personas dispatched every run, synthesized into theme clusters with evidence triangulation |
 | Implementation | Ad-hoc coding | **TDD-Enforced Building** — RED→GREEN→REFACTOR with inline code review, invariant preservation, and skill chain interrupts |
 | Debugging | "Try this fix" loops | **Session-Scoped TDD Fix Loop** — max 3 bugs/session, one at a time, proof-of-fix gates, blind skeptic verification, mandatory debug journals |
-| Security testing | Unit + integration | **20 Security Analysts** — 7 specialized clusters (injection, boundaries, concurrency, resources, integration, logic, crypto) with fix-and-rebreak cycles |
+| Security testing | Unit + integration | **Cross-cutting hunters + subsystem clusters** — 6 always-on failure-shape hunters (silent-wrong-answer, fail-open gates, tenant isolation, TOCTOU, payload-leak, determinism/dead-code-green) + 8 subsystem clusters fired by build surface + a frontend-coherence hunter, with CODE and SPEC/PLAN modes and fix-and-rebreak cycles |
 | Token usage | ~12,000-18,000 per workflow | **~5,500-8,000** per workflow (~55% savings) |
 
 ## Skills
@@ -20,7 +20,7 @@ Enhanced agentic skills framework for coding agents. Better brainstorming, smart
 2. **council** — All 20 decision intelligence personas (Contrarian, Actuarian, Archaeologist, Synthesizer, Economist, Anthropologist, Regulator, Migrationist, Epidemiologist, Cognitive Load Auditor, Chronologist, Measurement Skeptic, Analogist, Scope Prosecutor, Debt Collector, Operator, Build/Buy Arbitrageur, Privacy Engineer, Falsificationist, Velocity Accountant) dispatched in parallel every run. Synthesized into 3-5 theme clusters with evidence triangulation, counterfactual gate, and assumption registry. Also has 10 specialist investigators (personas 21-30) for debugging/root cause analysis.
 3. **planning** — Implementation plans with 2-5 minute task granularity, exact file paths, test commands, invariant preservation, assumption registry, counterfactual gate, and MVP-proof. Self-reviewed by plan-reviewer subagent against failure mode map.
 4. **building** — TDD-enforced (RED→GREEN→REFACTOR per task) with invariant preservation checks after each GREEN. Inline code review via reviewer subagent. Implementer subagent for complex tasks. Skill chain interrupts (LOCAL/UPSTREAM/HALT) on failure.
-5. **adversarial-testing** — All 20 security analysts dispatched in parallel across 7 clusters: Input Validation (injection, auth, CSRF), Boundary Testing (numeric, encoding, structure), Concurrency (race conditions, crash recovery, session state), Resource (memory, CPU complexity, throughput), Integration (API contracts, network partition, config drift), Logic (business logic, state machines, temporal/precision), Deep Specialists (crypto, regression). Anti-hallucination gate, evidence triangulation, severity×blast-radius priority matrix, fix-and-rebreak cycles.
+5. **adversarial-testing** — Two modes (**CODE** attacks implemented code; **SPEC/PLAN** attacks a design/plan before code). Every run fires **6 cross-cutting hunters** built around the failure shapes real products ship — silent-wrong-answer, silent-noop/fail-open gates, tenant/schema isolation, concurrency/TOCTOU, payload-leak, determinism+dead-code-green. A **dispatch map** then fires only the **subsystem clusters** the build touches (trust/audit, validator/auth, agent-loop/SQL, chart/marks, waterfall/twin/coverage, editor-state/dashboard, semantic-layer, frontend-render), plus a **frontend-coherence hunter** (always-on and amplified in SPEC mode). Gates: reachability tagging (DEAD-CODE caps at P3), read-only analysts, falsified-findings registry, non-halting per-round summaries, cross-file context for isolation/trust hunters. Anti-hallucination gate, evidence triangulation, severity×blast-radius priority matrix, fix-and-rebreak cycles.
 6. **verification** — Evidence-gated completion claims. Must run commands fresh, quote verbatim output (command + exit code + result + full output), scope creep guard. Bans "should", "probably", "I think".
 7. **git-flow** — Worktree creation (auto-detect deps, baseline test, gitignore check) + branch finishing (merge, push+PR, keep, or discard with confirmation).
 
@@ -48,8 +48,8 @@ User request
 [building] — TDD cycle per task (RED → GREEN → REFACTOR)
     |          Inline code review + invariant checks after each task
     v
-[adversarial-testing] — 20 security analysts in 7 clusters attack
-    |                     Fix-and-rebreak cycles, priority triage
+[adversarial-testing] — 6 cross-cutting hunters + build-relevant clusters attack
+    |                     (CODE or SPEC mode); fix-and-rebreak, priority triage
     v
 [verification] — Fresh evidence of success (verbatim output required)
     |
@@ -109,7 +109,7 @@ ultraflow/
 │   │   └── debug-journal-template.md
 │   ├── adversarial-testing/
 │   │   ├── SKILL.md
-│   │   └── breaker-personas.md  (20 analysts in 7 clusters)
+│   │   └── breaker-personas.md  (6 hunters + 8 clusters + frontend-coherence)
 │   ├── verification/SKILL.md
 │   ├── git-flow/SKILL.md
 │   ├── parallel-dispatch/SKILL.md

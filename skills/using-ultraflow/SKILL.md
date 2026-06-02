@@ -25,7 +25,7 @@ If user says **No**: ask "What should I correct?" Re-echo once with the correcti
 | `planning` | When spec exists, before coding | 600 |
 | `building` | When plan exists, ready to implement | 700 |
 | `debugging` | Any bug, test failure, unexpected behavior | 500 (simple) / 1500 (complex w/ Skeptic) |
-| `adversarial-testing` | After implementation, before declaring done | 400 |
+| `adversarial-testing` | CODE: after implementation, before done. SPEC: on a locked design, before code | 650 |
 | `verification` | Before claiming work is complete | 300 |
 | `git-flow` | Starting isolated work or finishing a branch | 400 |
 | `receiving-review` | When receiving code review feedback | 250 |
